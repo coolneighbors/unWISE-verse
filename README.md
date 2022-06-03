@@ -1,26 +1,27 @@
-```
-python one_wiseview_gif.py --help
-usage: one_wiseview_gif.py [-h] [--outdir OUTDIR] [--minbright MINBRIGHT] [--maxbright MAXBRIGHT] [--duration DURATION] [--keep_pngs] ra dec gifname
+#Full Pipeline: Queries ALLWISE AWS database, converts to gif, uploads to zooniverse
+Dependencies: Python3, panoptics cli, os, sys, csv
 
-generate one WiseView style unWISE image blink
+Usage
 
-positional arguments:
-  ra                    RA in decimal degrees.
-  dec                   Dec in decimal degrees.
-  gifname               Name of output GIF animation file.
+#in cmd/powershell
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --outdir OUTDIR       Output directory for PNGs.
-  --minbright MINBRIGHT
-                        Image rendering stretch lower bound.
-  --maxbright MAXBRIGHT
-                        image rendering stretch upper bound.
-  --duration DURATION   Time in seconds per frame.
-  --keep_pngs           Retain the PNGs after the GIF has been built?
-```
+python spout.py
 
-Optional Usage:
 
-Reading from CSV - 
-In manifest.csv, put RA and DEC of objects in the RA and DEC columns 
+----------------
+#input username and password
+#password will not be shown on screen, just type as normal
+
+
+
+#input name of subject set
+
+#Data will be gathered from the AWS server
+
+#Option to publish to zooniverse now, or quit
+
+#If you decide to publish now, input project ID
+
+	#If you would like to create a new subject set in zooniverse, enter y. Otherwise, enter n
+
+#Subject set gifs will be published to zooniverse
