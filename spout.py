@@ -7,6 +7,7 @@ Created on Fri Jun  3 13:25:59 2022
 
 import os
 import csv
+import wv
 
 projectID = input("Input Project ID: ")
 setName = input("Input Subject Set Name: ")
@@ -16,7 +17,7 @@ os.system('panoptes configure')
 
 pub=''
 
-header = ['RA', 'DEC', 'file']
+header = ['RA', 'DEC', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9']
 f = open('manifest.csv', 'w', newline='')
 writer= csv.writer(f)
 
@@ -30,13 +31,21 @@ with open('targets.csv', newline='') as targetList:
         RA=row['RA']
         DEC=row['DEC']
         gifName=f"gifs\{RA}-{DEC}.gif"
-        os.system(f"python one_wiseview_gif.py --outdir pngs --keep_pngs {RA} {DEC} {gifName}")
         
-        print(f"Target {RA}, {DEC}")
+        #set WV parameters to RA and DEC
+        wv.custom_params(RA, DEC)
         
-        row=[RA,DEC,gifName]
+        
+        #Save all images for parameter set
+        flist = wv.png_set(RA, DEC, "pngs")
+        
+        #os.system(f"python one_wiseview_gif.py --outdir pngs --keep_pngs {RA} {DEC} {gifName}")
+        
+        #write everything to a row in the manifest
+        row=[RA,DEC,*flist]
         writer.writerow(row)
-        print('Added Manifest Line')
+        
+        print(f"Added Manifest Line for Target {RA}, {DEC}")
 
 f.close()
 print('Generation Complete')

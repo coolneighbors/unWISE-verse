@@ -206,6 +206,24 @@ def gif_from_pngs(flist, gifname, duration=0.2):
 
     imageio.mimsave(gifname, images, duration=duration)
 
+def png_set(ra, dec, outdir, minbright=None,
+                     maxbright=None,):
+    counter = 0
+    assert(os.path.exists(outdir))
+
+    urls = get_radec_urls(ra, dec, minbright=None, maxbright=None)
+
+    flist = []
+    
+    for url in urls:
+        fieldName='field-RA'+str(ra)+'-DEC'+str(dec)+'-'+str(counter)+'.png'
+        fname_dest = _download_one_png(url, outdir, fieldName)
+        flist.append(fname_dest)
+        counter+=1
+        
+    return flist
+
+
 def one_wv_animation(ra, dec, outdir, gifname, minbright=None,
                      maxbright=None, duration=0.2, delete_pngs=True):
     
