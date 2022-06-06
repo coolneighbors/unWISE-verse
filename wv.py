@@ -1,5 +1,6 @@
 import requests
 import os
+import shutil
 
 png_anim = "https://vjxontvb73.execute-api.us-west-2.amazonaws.com/png-animation"
 amnh_base_url = "https://amnh-citsci-public.s3-us-west-2.amazonaws.com/"
@@ -134,9 +135,9 @@ def get_radec_urls(ra, dec, minbright=None, maxbright=None):
 
     # what is going on with these printouts? do we need them?
     # can they be made better?
-    print("JSON Response:")
-    print(res.json())
-    print("PNG Links:")
+    #print("JSON Response:")
+    #print(res.json())
+    #print("PNG Links:")
     urls = []
     for lnk in res.json()["ims"]:
         url = amnh_base_url + lnk
@@ -216,11 +217,21 @@ def png_set(ra, dec, outdir, minbright=None,
     flist = []
     
     for url in urls:
+        counter+=1
         fieldName='field-RA'+str(ra)+'-DEC'+str(dec)+'-'+str(counter)+'.png'
         fname_dest = _download_one_png(url, outdir, fieldName)
         flist.append(fname_dest)
+    
+    #make sure 10 images are saved for each png - if less than 10, copy last frame until there are ten
+    savedURL=url
+    while len(flist) < 10:
         counter+=1
         
+        newFieldName='field-RA'+str(ra)+'-DEC'+str(dec)+'-'+str(counter)+'.png'
+        fname_dest = _download_one_png(savedURL, outdir, newFieldName)
+        flist.append(fname_dest)
+        
+    
     return flist
 
 

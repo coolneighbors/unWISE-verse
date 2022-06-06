@@ -17,7 +17,7 @@ os.system('panoptes configure')
 
 pub=''
 
-header = ['RA', 'DEC', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9']
+header = ['RA', 'DEC', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10']
 f = open('manifest.csv', 'w', newline='')
 writer= csv.writer(f)
 
