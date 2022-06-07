@@ -1,6 +1,7 @@
 import requests
 import os
 import shutil
+from PIL import Image
 
 png_anim = "https://vjxontvb73.execute-api.us-west-2.amazonaws.com/png-animation"
 amnh_base_url = "https://amnh-citsci-public.s3-us-west-2.amazonaws.com/"
@@ -176,7 +177,7 @@ def _download_one_png(url, outdir, fieldName):
 
     return fname_dest
 
-def gif_from_pngs(flist, gifname, duration=0.2):
+def gif_from_pngs(flist, gifname, duration=0.2, scale_factor=1.0):
     """
     Construct a GIF animation from a list of PNG files.
 
@@ -189,6 +190,8 @@ def gif_from_pngs(flist, gifname, duration=0.2):
             Output file name (full path) for the GIF animation.
         duration : float
             Time interval in seconds for each frame in the GIF blink (?).
+        scale_factor : float
+            PNG image size scaling factor
 
     Notes
     -----
@@ -201,18 +204,28 @@ def gif_from_pngs(flist, gifname, duration=0.2):
 
     # add checks on whether the files in flist actually exist?
 
+    # Rescales PNGs
+    if(scale_factor != 1.0):
+        for f in flist:
+            im = Image.open(f)
+            size = im.size
+            width = size[0]
+            height = size[1]
+            rescaled_size = (width * scale_factor,height * scale_factor)
+            resize_png(f,rescaled_size)
+
+
     images = []
     for f in flist:
         images.append(imageio.imread(f))
 
     imageio.mimsave(gifname, images, duration=duration)
 
-def png_set(ra, dec, outdir, minbright=None,
-                     maxbright=None,):
+def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0):
     counter = 0
     assert(os.path.exists(outdir))
 
-    urls = get_radec_urls(ra, dec, minbright=None, maxbright=None)
+    urls = get_radec_urls(ra, dec, minbright=minbright, maxbright=maxbright)
 
     flist = []
     
@@ -230,10 +243,47 @@ def png_set(ra, dec, outdir, minbright=None,
         newFieldName='field-RA'+str(ra)+'-DEC'+str(dec)+'-'+str(counter)+'.png'
         fname_dest = _download_one_png(savedURL, outdir, newFieldName)
         flist.append(fname_dest)
-        
-    
+
+    # Rescales PNGs
+    if (scale_factor != 1.0):
+        for f in flist:
+            im = Image.open(f)
+            size = im.size
+            width = size[0]
+            height = size[1]
+            rescaled_size = (width * scale_factor, height * scale_factor)
+            resize_png(f, rescaled_size)
+
     return flist
 
+
+def resize_png(filename,size):
+    """
+       Overwrite PNG file with a particular width and height
+
+       Parameters
+       ----------
+           filename : string
+               Full path filename with filetype of the desired PNG file.
+           size : tuple, (int,int)
+               Width and height of the new PNG
+
+       Notes
+       -----
+        Should PNG files be overridden or should they just be created in addition to the original PNG?
+
+        Resampling parameter for resizing function is something that should be considered more.
+        The current one, LANCZOS, is native to PILLOW and in their documentation it says it is the
+        one which the best upscaling/downscaling quality
+
+        Could possibly implement a keep_aspect_ratio parameter, but our images should all be squares.
+    """
+
+    im = Image.open(filename)
+    resized_image = im.resize(size,Image.Resampling.LANCZOS)
+    #new_filename = filename.replace(".png","") + "_resized" + ".png"
+    resized_image.save(filename)
+    return filename
 
 def one_wv_animation(ra, dec, outdir, gifname, minbright=None,
                      maxbright=None, duration=0.2, delete_pngs=True):
