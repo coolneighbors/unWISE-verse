@@ -6,9 +6,9 @@ Refactored on Tuesday, June 7th
 @authors: Noah Schapera, Austin Humphreys
 """
 
-import os
 import csv
 import wv
+
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
 
 class Login:
@@ -45,6 +45,7 @@ class SubjectSetRetrievalError(Exception):
     def __init__(self, subject_set_id):
         super(InvalidDatasetError, self).__init__("Subject Set Identifier is not associated with any known subject set in this project: " + str(subject_set_id))
 
+
 class InvalidDatasetError(Exception):
     def __init__(self, dataset_filename,manifest_header, metadata_keys):
         bool_list = (key in manifest_header for key in metadata_keys)
@@ -54,6 +55,7 @@ class InvalidDatasetError(Exception):
             invalid_metadata_keys.append(metadata_keys[index])
         error_message = "The accessed dataset file at: " + str(dataset_filename) + " is not compliant with the current master manifest header: " + str(manifest_header) + "\n" + "The following entries are mismatched in the dataset file: " + str(invalid_metadata_keys)
         super(InvalidDatasetError, self).__init__(error_message)
+
 
 class Spout:
 
@@ -78,12 +80,14 @@ class Spout:
             The slug identifier only can work if the owner of the project is the one who is logging in
             since the owner's name is a part of the slug.
 
+
             A Zooniverse slug is of the form: "owner_username/project-name-with-dashes-for-spaces"
 
             Change the master manifest header to add new metadata or if you want to increase the total maximum of frames
             Frames are recognized as frames if they start with f and the rest is an integer. Slots them in the the order they appear
             in the master header from left to right
         """
+
 
         Panoptes.connect(username=login.username, password=login.password)
 
@@ -439,6 +443,3 @@ class Spout:
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
         print("Subjects Uploaded")
-
-
-
