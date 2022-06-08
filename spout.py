@@ -8,6 +8,7 @@ Refactored on Tuesday, June 7th
 
 import csv
 import wv
+import os
 
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
 
