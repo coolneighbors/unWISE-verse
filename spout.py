@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jun  7
+Created on Friday, June 3rd
+Refactored on Tuesday, June 7th
 
-@author: Austin Humphreys
+@authors: Noah Schapera, Austin Humphreys
 """
 
 import os
@@ -33,15 +34,25 @@ class Login:
 # Errors
 class ProjectIdentificationError(Exception):
     def __init__(self, project_identifier):
-        print("Project Identifier was not a string or an integer: " + str(project_identifier))
+        super(SubjectSetIdentificationError, self).__init__("Project Identifier was not a string or an integer: " + str(project_identifier))
 
 class SubjectSetIdentificationError(Exception):
     def __init__(self, subject_set_identifier):
-        print("Subject Set Identifier was not a string or an integer: " + str(subject_set_identifier))
+        super(SubjectSetIdentificationError, self).__init__("Subject Set Identifier was not a string or an integer: " + str(subject_set_identifier))
 
 class SubjectSetRetrievalError(Exception):
     def __init__(self, subject_set_id):
-        print("Subject Set Identifier is not associated with any known subject set in this project: " + str(subject_set_id))
+        super(InvalidDatasetError, self).__init__("Subject Set Identifier is not associated with any known subject set in this project: " + str(subject_set_id))
+
+class InvalidDatasetError(Exception):
+    def __init__(self, dataset_filename,manifest_header, metadata_keys):
+        bool_list = (key in manifest_header for key in metadata_keys)
+        invalid_metadata_key_indices = [i for i, x in enumerate(bool_list) if not x]
+        invalid_metadata_keys = []
+        for index in invalid_metadata_key_indices:
+            invalid_metadata_keys.append(metadata_keys[index])
+        error_message = "The accessed dataset file at: " + str(dataset_filename) + " is not compliant with the current master manifest header: " + str(manifest_header) + "\n" + "The following entries are mismatched in the dataset file: " + str(invalid_metadata_keys)
+        super(InvalidDatasetError, self).__init__(error_message)
 
 class Spout:
 
@@ -87,6 +98,7 @@ class Spout:
         print("Project Slug: " + str(self.linked_project.slug))
 
         self.manifest_header = ['RA', 'DEC', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10']
+
 
     def create_subject_set(self, display_name):
         """
@@ -201,6 +213,12 @@ class Spout:
         else:
             raise SubjectSetIdentificationError(subject_set_identifier)
 
+    def is_valid_dataset(self, dataset_filename):
+        with open(dataset_filename, newline='') as targetList:
+            reader = csv.DictReader(targetList)
+            metadata_keys = reader.fieldnames
+            return all(key in self.manifest_header for key in metadata_keys)
+
     def generate_manifest(self, manifest_filename, dataset_filename, overwrite_automatically = None):
         """
         Generates a manifest CSV file used to compile the information necessary to send over subjects to a subject set
@@ -228,7 +246,7 @@ class Spout:
         if(overwrite_automatically is None):
             if (os.path.exists(manifest_filename)):
                 print("Manifest File: " + str(manifest_filename))
-                response = input("This manifest already exists. Would you like to overwrite this manifest? (y/n)")
+                response = input("This manifest already exists. Would you like to overwrite this manifest? (y/n) ")
                 end_prompt = False
                 while (not end_prompt):
                     if (response.lower() == "y"):
@@ -239,7 +257,7 @@ class Spout:
                         end_prompt = True
                         overwrite_manifest = False
                     else:
-                        response = input("Invalid response, please type y or n.")
+                        response = input("Invalid response, please type a valid response (y/n): ")
             else:
                 overwrite_manifest = True
         elif(overwrite_automatically):
@@ -253,28 +271,37 @@ class Spout:
             writer = csv.writer(f)
             writer.writerow(self.manifest_header)
             print('Header Created')
-
             with open(dataset_filename, newline='') as targetList:
                 reader = csv.DictReader(targetList)
-                for row in reader:
-                    RA = row['RA']
-                    DEC = row['DEC']
+                if (self.is_valid_dataset(dataset_filename)):
+                    for row in reader:
+                        RA = row['RA']
+                        DEC = row['DEC']
 
-                    # set WV parameters to RA and DEC
-                    wv.custom_params(RA, DEC)
+                        metadata = []
+                        for key in row:
+                            metadata.append(row[key])
 
-                    # Save all images for parameter set
-                    flist = wv.png_set(RA, DEC, "pngs", scale_factor=2)
+                        # set WV parameters to RA and DEC
+                        wv.custom_params(RA, DEC)
 
-                    # write everything to a row in the manifest
-                    row = [RA, DEC, *flist]
-                    writer.writerow(row)
+                        # Save all images for parameter set
+                        flist = wv.png_set(RA, DEC, "pngs", scale_factor=2)
 
-                    print(f"Added Manifest Line for Target {RA}, {DEC}")
-            f.close()
-            print('Manifest Generation Complete')
+                        # write everything to a row in the manifest
+                        row = [*metadata, *flist]
+                        writer.writerow(row)
+
+                        print(f"Added Manifest Line for Target {RA}, {DEC}")
+
+                    f.close()
+                    print('Manifest Generation Complete')
+                else:
+                    metadata_keys = reader.fieldnames
+                    raise InvalidDatasetError(dataset_filename, self.manifest_header, metadata_keys)
         else:
             print("Existing Manifest Preserved")
+
 
     def generate_subject_data_dicts(self,manifest_filename):
         """
@@ -403,6 +430,7 @@ class Spout:
         subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
+        print("Subjects Uploaded")
 
 
 
