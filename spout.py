@@ -11,7 +11,7 @@ import wv
 from panoptes_client import Panoptes, Project, SubjectSet, subject_set, Subject
 
 class Login:
-    def __init__(self, username, password):
+    def __init__(self, username='', password=''):
         """
         Construct a Login object, a simple way to store a Zooniverse user's username and password.
 
@@ -19,9 +19,10 @@ class Login:
         ----------
             username : str
                 A string representing the username of a user on Zooniverse
+                Defaults to empty
             password : str
                 A string representing the password of the same user on Zooniverse
-
+                Defaults to empty
         Notes
         -----
             This object and the login process probably could be made more secure, but this doesn't seem very necessary
@@ -374,6 +375,13 @@ class Spout:
         """
         subject_set.add(subjects)
         subject_set.save()
+        
+    def publish_existing_manifest(self,subject_set,manifest_filename):
+        
+        
+        subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
+        subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
+        self.fill_subject_set(subject_set, subjects)
 
     def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None):
         """
