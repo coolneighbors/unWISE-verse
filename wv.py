@@ -185,12 +185,12 @@ def gif_from_pngs(flist, gifname, duration=0.2, scale_factor=1.0):
     ----------
         flist : list
             List of (full path) file names of PNG images from which to
-            construct the GIF animatino.
+            construct the GIF animation.
         gifname : str
             Output file name (full path) for the GIF animation.
-        duration : float
+        duration : float, optional
             Time interval in seconds for each frame in the GIF blink (?).
-        scale_factor : float
+        scale_factor : float, optional
             PNG image size scaling factor
 
     Notes
@@ -222,6 +222,34 @@ def gif_from_pngs(flist, gifname, duration=0.2, scale_factor=1.0):
     imageio.mimsave(gifname, images, duration=duration)
 
 def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0):
+    """
+    Generates a set of PNG files for the available set of data from WiseView
+
+    Parameters
+    ----------
+        ra : float
+            RA in decimal degrees.
+        dec : float
+            Dec in decimal degrees.
+        minbright : float, optional
+            WiseView image stretch lower pixel value. Default of None
+            picks up default value from default_params() utility.
+        maxbright : float, optional
+            WiseView image stretch upper pixel value. Default of None
+            picks up default value from default_params() utility.
+        scale_factor : float, optional
+            PNG image size scaling factor
+
+    Returns
+    -------
+        flist : list of str
+            List of (full path) file names of PNG images
+
+    Notes
+    -----
+
+    """
+
     counter = 0
     assert(os.path.exists(outdir))
 
@@ -328,7 +356,7 @@ def one_wv_animation(ra, dec, outdir, gifname, minbright=None,
 
     assert(os.path.exists(outdir))
 
-    urls = get_radec_urls(ra, dec, minbright=None, maxbright=None)
+    urls = get_radec_urls(ra, dec, minbright=minbright, maxbright=maxbright)
 
     flist = []
     
