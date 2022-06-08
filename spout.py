@@ -8,7 +8,7 @@ Created on Fri Jun  7
 import os
 import csv
 import wv
-from panoptes_client import Panoptes, Project, SubjectSet, subject_set, Subject
+from panoptes_client import Panoptes, Project, SubjectSet, Subject
 
 class Login:
     def __init__(self, username, password):
