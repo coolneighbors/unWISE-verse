@@ -12,6 +12,10 @@ import os
 
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
 
+#initialize image manipulation variables
+enableOverlay = True
+scaling = 2
+
 class Login:
     def __init__(self, username='', password=''):
         """
@@ -292,7 +296,7 @@ class Spout:
                         wv.custom_params(RA, DEC)
 
                         # Save all images for parameter set
-                        flist = wv.png_set(RA, DEC, "pngs", scale_factor=2)
+                        flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling, addGrid=enableOverlay)
 
                         # write everything to a row in the manifest
                         row = [*metadata, *flist]

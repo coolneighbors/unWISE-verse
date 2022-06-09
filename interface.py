@@ -125,7 +125,6 @@ def whatToDo():
             return 2
         else:
             print("Unknown input. Please try again.")
-        
-        
+            
 if __name__ == "__main__":
     getCreds()
