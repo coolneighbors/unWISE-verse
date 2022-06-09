@@ -1,54 +1,79 @@
-#Full Pipeline: Queries ALLWISE AWS database, converts to gif, uploads to zooniverse
-Dependencies: Python3, panoptics cli, os, sys, csv
+# FullPipeline
 
-Dependency installation: 
+An integrated unWISE data collection and Zooniverse upload pipeline using the Panoptes-Client
+## Description
+FullPipeline allows a user to quickly download a large set of target data from the unWISE AWS and upload the data to a Zooniverse subject set. In addition, users have the option to just download data without uploading, or uploading an existing set set of target png's. 
+## Getting Started
+### Dependencies
+* Valid Zooniverse login credentials, contributor access to an existing project. 
+* Python 3.10
+* Python Packages:
+	* Panoptes-Client
+	* Pillow
+	* getpass
+	* requests
+	* os
+	* shutil
+	* csv
+### Installing
+* Dowload python packages as nescessary (recommended to use pip or similar)
+```
+pip install panoptes-client
+			Pillow
+			getpass
+			requests
+			os
+			shutil
+			csv
+```
+* Clone into git repository at github.com/coolneighbors/FullPipeline
+```
+git clone http://github.com/coolneighbors/FullPipeline
+```
+* In repository, create pngs directory
+```
+mkdir pngs
+```
+### Executing program
+* FullPipeline allows the user to download and upload, just download, or just upload targets to a subject set in Zooniverse
 
-os, sys, and csv libraries should be installed by default with most Python installations
+* If you intend to download data from the unWISE catologue, this program requires a list of targets.
+	* The targets should be provided in a csv file as follows:
+	* Note all ra_n and dec_n should be numerical values (decimals allowed)
+```
+RA,DEC
+ra_1,dec_1
+ra_2,dec_2
+ra_3,dec_3
+...,...
+ra_n,dec_n
+```
+
+* Navigate to FullPipeline directory, and in cmd/powershell enter the command
+```
+python ./PipelineStart.py/
+```
+
+## Help
+
+We need to make a helper command! This section is reserved for that.
+```
+command to run if program contains helper info
+```
+
+## Authors
+[Noah Schapera](https://www.linkedin.com/in/noah-schapera-86303a1b9/)
+[Austin Humphreys](https://www.linkedin.com/in/austin-humphreys-b87055187/)
+[Aaron Meisner](https://www.linkedin.com/in/aaron-meisner/)
 
 
-Install panoptescli using the command: 
+## Version History
 
-##pip install panoptescli
+TO DO
 
+## License
 
-Usage:
+UNKNOWN -- Aaron?
 
-
-input RA and DEC for each target in the targets.csv file
-
-In cmd/powershell
-
-##python spout.py
-
-manifest.csv will be generated in current director
-all png's for targets will be saved to pngs/ folder
-
-----------------
-
-Uploading to Zooniverse:
-
-After manifest generation and png saving, user will be queried about whether they would like to save to Zoonivers
-Program will end if no. If yes: 
-
-User will input Zooniverse project ID and subject set name. 
-Zooniverse credentials will be verified, if this is the first time running the program, user will input Zooniverse username and password
-Note: password will not be shown on screen, just type as normal
-
-If credentials have been previously entered, current user will be shown as 
-Username [USER]: 
-Hit enter twice to skip username and password entry. Otherwise, enter new username and password
-
-
-Option to create new subject set for the Zooniverse project. If yes, program will generate new subject set and output a set ID:
-[ID] {[NAME]}
-
-Enter set ID in input section as prompted.
-
-Data will be published.  
-
-
-If no, enter known set ID into input section as prompted.
-
-Data will be published.
-
-Program will end. 
+## Acknowledgments
+* [panoptes-python-client](https://github.com/zooniverse/panoptes-python-client)
