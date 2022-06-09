@@ -46,7 +46,6 @@ class SubjectSetRetrievalError(Exception):
     def __init__(self, subject_set_id):
         super(InvalidDatasetError, self).__init__("Subject Set Identifier is not associated with any known subject set in this project: " + str(subject_set_id))
 
-
 class InvalidDatasetError(Exception):
     def __init__(self, dataset_filename,manifest_header, metadata_keys):
         bool_list = (key in manifest_header for key in metadata_keys)
@@ -60,7 +59,7 @@ class InvalidDatasetError(Exception):
 
 class Spout:
 
-    def __init__(self, project_identifier,login):
+    def __init__(self, project_identifier, login):
 
         """
         Construct a Spout object, a data pipeline between local files and any accessible Zooniverse project.
@@ -409,8 +408,7 @@ class Spout:
         subject_set.save()
         
     def publish_existing_manifest(self,subject_set,manifest_filename):
-        
-        
+
         subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
