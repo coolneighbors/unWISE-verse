@@ -41,7 +41,7 @@ mkdir pngs
 	* The targets should be provided in a csv file as follows:
 	* Note all ra_n and dec_n should be numerical values (decimals allowed)
 ```
-RA,DEC,GRID
+RA,DEC,!GRID
 ra_1,dec_1,[1, 0, or empty]
 ra_2,dec_2,[1, 0, or empty] 
 ra_3,dec_3,[1, 0, or empty]
@@ -56,6 +56,12 @@ The grid metadata allows the user to decide whether a grid will be overlayed ont
 ```
 python ./PipelineStart.py/
 ```
+## Notes
+
+FullPipeline uses a semi-modular metadata system. In order to add another line of metadata to the subject set, add a ![metadata] column to both the targets.csv and ![metadata] column to the second row of master_header.txt
+Failure to do so will result in an error message.
+
+You can turn off cross checking master-header by changing the enable_strict_manifest field in the generate_manifest function of spout.py to false. This is not reccomended.
 
 ## Help
 
@@ -82,7 +88,7 @@ command to run if program contains helper info
 
 ## License
 
-UNKNOWN -- Aaron?
+NONE - Not public
 
 ## Acknowledgments
 * [panoptes-python-client](https://github.com/zooniverse/panoptes-python-client)
