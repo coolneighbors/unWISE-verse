@@ -2,6 +2,10 @@ import csv
 import wv
 from Data import Data, Metadata
 
+#initialize image manipulation variables
+enableOverlay = True
+scaling = 2
+
 # Errors
 class NonUniformFieldsError(Exception):
     def __init__(self):
@@ -65,7 +69,7 @@ class Zooniverse_Dataset(Dataset):
                 wv.custom_params(RA, DEC)
 
                 # Save all images for parameter set
-                flist = wv.png_set(RA, DEC, "pngs", scale_factor=2)
+                flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling, addGrid=enableOverlay)
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i+1))
