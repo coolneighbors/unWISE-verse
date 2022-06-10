@@ -11,6 +11,8 @@ import wv
 import os
 
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
+from Manifest import Manifest, Defined_Manifest
+from Dataset import Dataset, Zooniverse_Dataset
 
 class Login:
     def __init__(self, username='', password=''):
@@ -101,8 +103,6 @@ class Spout:
 
         print("Project ID: " + str(self.linked_project.id))
         print("Project Slug: " + str(self.linked_project.slug))
-
-        self.manifest_header = ['RA', 'DEC', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10']
 
 
     def create_subject_set(self, display_name):
@@ -218,13 +218,7 @@ class Spout:
         else:
             raise SubjectSetIdentificationError(subject_set_identifier)
 
-    def is_valid_dataset(self, dataset_filename):
-        with open(dataset_filename, newline='') as targetList:
-            reader = csv.DictReader(targetList)
-            metadata_keys = reader.fieldnames
-            return all(key in self.manifest_header for key in metadata_keys)
-
-    def generate_manifest(self, manifest_filename, dataset_filename, overwrite_automatically = None):
+    def generate_manifest(self, manifest_filename, dataset_filename, overwrite_automatically = None, enable_strict_manifest = True):
         """
         Generates a manifest CSV file used to compile the information necessary to send over subjects to a subject set
         associated with the linked project.
@@ -246,67 +240,12 @@ class Spout:
             Just to prevent wasteful redundancy, I implemented a way to ask the user if they are supposed to overwrite
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
-
-        overwrite_manifest = None
-        if(overwrite_automatically is None):
-            if (os.path.exists(manifest_filename)):
-                print("Manifest File: " + str(manifest_filename))
-                response = input("This manifest already exists. Would you like to overwrite this manifest? (y/n) ")
-                end_prompt = False
-                while (not end_prompt):
-                    if (response.lower() == "y"):
-                        end_prompt = True
-                        overwrite_manifest = True
-                        print("Warning: manifest file being overridden at: " + str(manifest_filename))
-                    elif (response.lower() == "n"):
-                        end_prompt = True
-                        overwrite_manifest = False
-                    else:
-                        response = input("Invalid response, please type a valid response (y/n): ")
-            else:
-                overwrite_manifest = True
-        elif(overwrite_automatically):
-            overwrite_manifest = True
-
+        dataset = Zooniverse_Dataset(dataset_filename)
+        print(dataset[0])
+        if(enable_strict_manifest):
+            self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically)
         else:
-            overwrite_manifest = False
-
-        if(overwrite_manifest):
-            f = open(manifest_filename, 'w', newline='')
-            writer = csv.writer(f)
-            writer.writerow(self.manifest_header)
-            print('Header Created')
-            with open(dataset_filename, newline='') as targetList:
-                reader = csv.DictReader(targetList)
-                if (self.is_valid_dataset(dataset_filename)):
-                    for row in reader:
-                        RA = row['RA']
-                        DEC = row['DEC']
-
-                        metadata = []
-                        for key in row:
-                            metadata.append(row[key])
-
-                        # set WV parameters to RA and DEC
-                        wv.custom_params(RA, DEC)
-
-                        # Save all images for parameter set
-                        flist = wv.png_set(RA, DEC, "pngs", scale_factor=2)
-
-                        # write everything to a row in the manifest
-                        row = [*metadata, *flist]
-                        writer.writerow(row)
-
-                        print(f"Added Manifest Line for Target {RA}, {DEC}")
-
-                    f.close()
-                    print('Manifest Generation Complete')
-                else:
-                    metadata_keys = reader.fieldnames
-                    raise InvalidDatasetError(dataset_filename, self.manifest_header, metadata_keys)
-        else:
-            print("Existing Manifest Preserved")
-
+            self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically)
 
     def generate_subject_data_dicts(self,manifest_filename):
         """
@@ -339,10 +278,9 @@ class Spout:
             count = count + 1
             if(count != 1):
                 subject_data_dict = {}
-                for i in range(len(self.manifest_header)):
-                    key = self.manifest_header[i]
-                    data = row[i]
-                    subject_data_dict[key] = data
+                for i in range(len(self.manifest.header)):
+                    key = self.manifest.header[i]
+                    subject_data_dict[key] = row[i]
                 subject_data_dicts.append(subject_data_dict)
         return subject_data_dicts
 
@@ -413,7 +351,7 @@ class Spout:
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
 
-    def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None):
+    def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None, enable_strict_manifest = True):
         """
         Uploads data from a dataset CSV, generates a manifest CSV, generates subjects from the manifest CSV, and then
         fills the subject set associated with the linked project on Zooniverse.
@@ -437,7 +375,7 @@ class Spout:
 
         """
 
-        self.generate_manifest(manifest_filename, dataset_filename, overwrite_automatically)
+        self.generate_manifest(manifest_filename, dataset_filename, overwrite_automatically, enable_strict_manifest)
         subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
