@@ -234,6 +234,10 @@ class Spout:
                 Allows for a default option for overwriting the manifest file. If None, it will ask the user for a
                 response and use that to decide whether or not to overwrite the existing manifest file. If set to true
                 or to false, it will use that to decide.
+            enable_strict_manifest: bool, optional
+                Allows for manifests to be required to follow the standard a master_manifest.txt file, otherwise it
+                will raise an error. This is to avoid any discrepancies in our uploading scheme, once it its finalized.
+                Defaulted to true.
 
         Notes
         -----
@@ -265,9 +269,9 @@ class Spout:
 
         Notes
         -----
-            These subject data dictionaries contain both data, the images of our flipbooks, and metadata such as the
-            RA and DEC associated with the center of these images. We could potentially include more metadata if we
-            think it would be useful.
+            These subject data dictionaries contain both data, the images path filenames of our flipbooks, and metadata such as the
+            RA and DEC associated with the center of these images. The functionality to include an arbitrary amount of
+            metadata has been implemented.
         """
 
         manifest_file = open(manifest_filename)
@@ -346,7 +350,24 @@ class Spout:
         subject_set.save()
         
     def publish_existing_manifest(self,subject_set,manifest_filename):
+        """
+        Publishes data to Zooniverse subject set based on an existing manifest file, and existing data in the local png folder.
 
+        Parameters
+        ----------
+            subject_set : SubjectSet object
+                A SubjectSet object associated to the linked project on Zooniverse.
+
+            manifest_filename : str
+                A full path filename of the manifest CSV to be accessed.
+
+        Notes
+        -----
+            One point of failure of this function is if a manifest exists but the pngs associated to the manifest's data
+            does not exist. This will result in the code trying to access the image files to send to Zooniverse but it won't
+            be able to do so since they are not there. This could be reason enough to consider a string-based encoding
+            scheme for images in the manifest.
+        """
         subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
@@ -369,6 +390,10 @@ class Spout:
                 Allows for a default option for overwriting the manifest file. If None, it will ask the user for a
                 response and use that to decide whether or not to overwrite the existing manifest file. If set to true
                 or to false, it will use that to decide.
+            enable_strict_manifest: bool, optional
+                Allows for manifests to be required to follow the standard a master_manifest.txt file, otherwise it
+                will raise an error. This is to avoid any discrepancies in our uploading scheme, once it its finalized.
+                Defaulted to true.
 
         Notes
         -----
