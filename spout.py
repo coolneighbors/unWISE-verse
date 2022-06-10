@@ -101,6 +101,8 @@ class Spout:
         else:
             raise ProjectIdentificationError(project_identifier)
 
+        self.manifest = None
+
         print("Project ID: " + str(self.linked_project.id))
         print("Project Slug: " + str(self.linked_project.slug))
 
@@ -274,15 +276,17 @@ class Spout:
         """
 
         manifest_file = open(manifest_filename)
-        manifest = csv.reader(manifest_file)
+        manifest_file_reader = csv.reader(manifest_file)
         count = 0
         subject_data_dicts = []
-        for row in manifest:
+        for row in manifest_file_reader:
             count = count + 1
+            if(count == 1):
+                header = row
             if(count != 1):
                 subject_data_dict = {}
-                for i in range(len(self.manifest.header)):
-                    key = self.manifest.header[i]
+                for i in range(len(header)):
+                    key = header[i]
                     subject_data_dict[key] = row[i]
                 subject_data_dicts.append(subject_data_dict)
         return subject_data_dicts
@@ -403,4 +407,5 @@ class Spout:
         subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
+        self.manifest = None
         print("Subjects Uploaded")
