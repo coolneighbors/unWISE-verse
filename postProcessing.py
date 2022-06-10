@@ -7,6 +7,23 @@ Created on Thu Jun  9 15:15:09 2022
 from PIL import Image, ImageDraw
 
 def addGrid(imname, step_count = 10):
+    '''
+    
+    Post processing "shader" that adds a grid to an image.
+    
+
+    Parameters
+    ----------
+    imname : TYPE
+        image filename.
+    step_count : TYPE, optional
+        The number of grid lines to generate on the image (height and width). The default is 10.
+
+    Returns
+    -------
+    None.
+
+    '''
     
     
     with Image.open(imname) as image:
