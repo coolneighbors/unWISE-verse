@@ -3,7 +3,6 @@ import wv
 from Data import Data, Metadata
 
 #initialize image manipulation variables
-enableOverlay = True
 scaling = 2
 
 # Errors
@@ -57,6 +56,14 @@ class Zooniverse_Dataset(Dataset):
             for row in reader:
                 RA = row['RA']
                 DEC = row['DEC']
+                gridYN = row['GRID']
+                
+                #parse gridyn into integer values, only accept '1'
+                if gridYN == '1':
+                    gridYN = 1
+                else:
+                    gridYN = 0
+                
                 row_metadata = []
                 metadata_field_names = []
                 for key in row.keys():
@@ -68,8 +75,14 @@ class Zooniverse_Dataset(Dataset):
                 # set WV parameters to RA and DEC
                 wv.custom_params(RA, DEC)
 
-                # Save all images for parameter set
-                flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling, addGrid=enableOverlay)
+                # Save all images for parameter set, add grid if toggled for that image
+                if (gridYN == 1):
+                    flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling, addGrid=True)
+                else:
+                    flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling)
+                    
+                    
+                
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i+1))
