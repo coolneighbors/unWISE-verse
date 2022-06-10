@@ -54,7 +54,9 @@ class Zooniverse_Dataset(Dataset):
                 RA = row['RA']
                 DEC = row['DEC']
                 row_metadata = []
-                metadata_field_names = row.keys()
+                metadata_field_names = []
+                for key in row.keys():
+                    metadata_field_names.append(key)
                 for key in row:
                     row_metadata.append(row[key])
                 metadata_list.append(Metadata(metadata_field_names, row_metadata))
