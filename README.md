@@ -25,15 +25,13 @@ pip install panoptes-client
 		os
 		shutil
 		csv
+
 ```
 * Clone into git repository at github.com/coolneighbors/FullPipeline
 ```
 git clone http://github.com/coolneighbors/FullPipeline
 ```
-* In repository, create pngs directory
-```
-mkdir pngs
-```
+
 ### Executing program
 * FullPipeline allows the user to download and upload, just download, or just upload targets to a subject set in Zooniverse
 
@@ -84,7 +82,7 @@ command to run if program contains helper info
 	
 	Other features: Download data without publishing. Publish data without uploading. Dynamically modify subject metadata.
 	
-	To Do Before Release: Add multiprocessing to data downloading. Add compatability with .fits files. 
+	To Do Before Release: Add multiprocessing to data downloading. Add compatability with .fits files. Add GUI
 
 ## License
 
