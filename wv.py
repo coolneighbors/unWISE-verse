@@ -248,11 +248,14 @@ def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0,add
 
     Notes
     -----
-
+        Has the functionality that if outdir doesn't currently exist, it will create it instead of previously where we
+        just asserted that it existed.
     """
 
     counter = 0
-    assert(os.path.exists(outdir))
+
+    if(not os.path.exists(outdir)):
+        os.mkdir(outdir)
 
     urls = get_radec_urls(ra, dec, minbright=minbright, maxbright=maxbright)
 
