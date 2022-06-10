@@ -234,6 +234,10 @@ class Spout:
                 Allows for a default option for overwriting the manifest file. If None, it will ask the user for a
                 response and use that to decide whether or not to overwrite the existing manifest file. If set to true
                 or to false, it will use that to decide.
+            enable_strict_manifest: bool, optional
+                Allows for manifests to be required to follow the standard a master_manifest.txt file, otherwise it
+                will raise an error. This is to avoid any discrepancies in our uploading scheme, once it its finalized.
+                Defaulted to true.
 
         Notes
         -----
@@ -386,6 +390,10 @@ class Spout:
                 Allows for a default option for overwriting the manifest file. If None, it will ask the user for a
                 response and use that to decide whether or not to overwrite the existing manifest file. If set to true
                 or to false, it will use that to decide.
+            enable_strict_manifest: bool, optional
+                Allows for manifests to be required to follow the standard a master_manifest.txt file, otherwise it
+                will raise an error. This is to avoid any discrepancies in our uploading scheme, once it its finalized.
+                Defaulted to true.
 
         Notes
         -----
