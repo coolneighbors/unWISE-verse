@@ -19,12 +19,12 @@ FullPipeline allows a user to quickly download a large set of target data from t
 * Dowload python packages as nescessary (recommended to use pip or similar)
 ```
 pip install panoptes-client
-			Pillow
-			getpass
-			requests
-			os
-			shutil
-			csv
+		Pillow
+		getpass
+		requests
+		os
+		shutil
+		csv
 ```
 * Clone into git repository at github.com/coolneighbors/FullPipeline
 ```
@@ -41,13 +41,16 @@ mkdir pngs
 	* The targets should be provided in a csv file as follows:
 	* Note all ra_n and dec_n should be numerical values (decimals allowed)
 ```
-RA,DEC
-ra_1,dec_1
-ra_2,dec_2
-ra_3,dec_3
+RA,DEC,GRID
+ra_1,dec_1,[1, 0, or empty]
+ra_2,dec_2,[1, 0, or empty] 
+ra_3,dec_3,[1, 0, or empty]
 ...,...
-ra_n,dec_n
+ra_n,dec_n,[1, 0, or empty]
 ```
+
+The grid metadata allows the user to decide whether a grid will be overlayed onto the image downloaded from the unWISE catologue. 
+
 
 * Navigate to FullPipeline directory, and in cmd/powershell enter the command
 ```
@@ -69,7 +72,13 @@ command to run if program contains helper info
 
 ## Version History
 
-TO DO
+0.1 -- Working pipeline, minimum viable product for data upload workflow. Not quite ready for release
+	
+	Downloads data from unWISE catologue given list of targets RA and DEC in CSV. Option to add grid lines. Uploads to zooniverse subject set.
+	
+	Other features: Download data without publishing. Publish data without uploading. Dynamically modify subject metadata.
+	
+	To Do Before Release: Add multiprocessing to data downloading. Add compatability with .fits files. 
 
 ## License
 
