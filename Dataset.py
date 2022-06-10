@@ -56,7 +56,7 @@ class Zooniverse_Dataset(Dataset):
             for row in reader:
                 RA = row['RA']
                 DEC = row['DEC']
-                gridYN = row['GRID']
+                gridYN = row['!GRID']
                 
                 #parse gridyn into integer values, only accept '1'
                 if gridYN == '1':
