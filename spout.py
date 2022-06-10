@@ -14,6 +14,10 @@ from panoptes_client import Panoptes, Project, SubjectSet, Subject
 from Manifest import Manifest, Defined_Manifest
 from Dataset import Dataset, Zooniverse_Dataset
 
+#initialize image manipulation variables
+enableOverlay = True
+scaling = 2
+
 class Login:
     def __init__(self, username='', password=''):
         """

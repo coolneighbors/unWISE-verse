@@ -2,6 +2,7 @@ import requests
 import os
 import shutil
 from PIL import Image
+import postProcessing
 
 png_anim = "https://vjxontvb73.execute-api.us-west-2.amazonaws.com/png-animation"
 amnh_base_url = "https://amnh-citsci-public.s3-us-west-2.amazonaws.com/"
@@ -221,7 +222,7 @@ def gif_from_pngs(flist, gifname, duration=0.2, scale_factor=1.0):
 
     imageio.mimsave(gifname, images, duration=duration)
 
-def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0):
+def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0,addGrid=False,gridSize=10):
     """
     Generates a set of PNG files for the available set of data from WiseView
 
@@ -281,6 +282,11 @@ def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0):
             height = size[1]
             rescaled_size = (width * scale_factor, height * scale_factor)
             resize_png(f, rescaled_size)
+    
+    #adds grid to pngs
+    if (addGrid == True):
+        for f in flist:
+            postProcessing.addGrid(f,gridSize)
 
     return flist
 
