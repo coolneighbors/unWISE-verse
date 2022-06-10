@@ -245,7 +245,6 @@ class Spout:
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
         dataset = Zooniverse_Dataset(dataset_filename)
-        print(dataset[0])
         if(enable_strict_manifest):
             self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically)
         else:
