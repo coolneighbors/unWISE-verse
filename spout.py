@@ -12,28 +12,7 @@ import os
 
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
 from Manifest import Manifest, Defined_Manifest
-from Dataset import Dataset, Zooniverse_Dataset
-
-class Login:
-    def __init__(self, username='', password=''):
-        """
-        Construct a Login object, a simple way to store a Zooniverse user's username and password.
-
-        Parameters
-        ----------
-            username : str
-                A string representing the username of a user on Zooniverse
-                Defaults to empty
-            password : str
-                A string representing the password of the same user on Zooniverse
-                Defaults to empty
-        Notes
-        -----
-            This object and the login process probably could be made more secure, but this doesn't seem very necessary
-            if the login is done locally and for our own purposes
-        """
-        self.username = username
-        self.password = password
+from Dataset import Dataset, Zooniverse_Dataset, CN_Dataset
 
 # Errors
 class ProjectIdentificationError(Exception):
@@ -64,7 +43,7 @@ class Spout:
     def __init__(self, project_identifier, login):
 
         """
-        Construct a Spout object, a data pipeline between local files and any accessible Zooniverse project.
+        Constructs a Spout object, a data pipeline between local files and any accessible Zooniverse project.
         This logs into Zooniverse as a particular user, links this Spout to a specific Zooniverse project that user has
         access to, and defines the master manifest header.
 
@@ -246,7 +225,7 @@ class Spout:
             Just to prevent wasteful redundancy, I implemented a way to ask the user if they are supposed to overwrite
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
-        dataset = Zooniverse_Dataset(dataset_filename)
+        dataset = CN_Dataset(dataset_filename)
         if(enable_strict_manifest):
             self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically)
         else:

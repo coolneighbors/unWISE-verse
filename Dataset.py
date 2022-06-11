@@ -31,7 +31,7 @@ class Dataset():
             for other_metadata in metadata_list:
                 if (not metadata.have_equal_fields(other_metadata)):
                     raise NonUniformFieldsError
-        self.metadata_field_names = self.metadata_list[0].field_names
+        self.metadata_field_names = self.metadata_list[0].getAdjustedFieldNames()
 
     def __str__(self):
         return "Datalist: " + str(self.data_list) + ", " + "Metadata List: " + str(self.metadata_list)
@@ -56,14 +56,47 @@ class Zooniverse_Dataset(Dataset):
             for row in reader:
                 RA = row['RA']
                 DEC = row['DEC']
+
+                row_metadata = []
+                metadata_field_names = []
+                for key in row.keys():
+                    metadata_field_names.append(key)
+                for key in row:
+                    row_metadata.append(row[key])
+                metadata_list.append(Metadata(metadata_field_names, row_metadata))
+
+                # set WV parameters to RA and DEC
+                wv.custom_params(RA, DEC)
+
+                # Save all images for parameter set, add grid if toggled for that image
+                flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling, addGrid=False)
+
+                data_field_names = []
+                for i in range(len(flist)):
+                    data_field_names.append("f" + str(i+1))
+                data_list.append(Data(data_field_names, flist))
+        super(Zooniverse_Dataset, self).__init__(data_list, metadata_list)
+
+
+class CN_Dataset(Zooniverse_Dataset):
+    def __init__(self, dataset_filename):
+        data_list = []
+        metadata_list = []
+
+        # Currently is only able to use CSV files
+        with open(dataset_filename, newline='') as targetList:
+            reader = csv.DictReader(targetList)
+            for row in reader:
+                RA = row['RA']
+                DEC = row['DEC']
                 gridYN = row['!GRID']
-                
-                #parse gridyn into integer values, only accept '1'
+
+                # parse gridyn into integer values, only accept '1'
                 if gridYN == '1':
                     gridYN = 1
                 else:
                     gridYN = 0
-                
+
                 row_metadata = []
                 metadata_field_names = []
                 for key in row.keys():
@@ -80,11 +113,10 @@ class Zooniverse_Dataset(Dataset):
                     flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling, addGrid=True)
                 else:
                     flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling)
-                    
-                    
-                
+
                 data_field_names = []
                 for i in range(len(flist)):
-                    data_field_names.append("f" + str(i+1))
+                    data_field_names.append("f" + str(i + 1))
                 data_list.append(Data(data_field_names, flist))
         super(Zooniverse_Dataset, self).__init__(data_list, metadata_list)
+
