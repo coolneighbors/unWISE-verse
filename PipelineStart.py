@@ -66,13 +66,14 @@ def publishToZooniverse():
     workingSpout.publish_existing_manifest(subject_set,manifest)
     
     
-#Calls interface to determine how the program should run.
-behavior = interface.whatToDo()
-if behavior == 0:
-    fullPipeline()
-elif behavior == 1:
-    generateManifest()
-elif behavior == 2:
-    publishToZooniverse()
-else:
-    print("You broke the pipeline :(")
+if __name__ == "__main__":
+    #Calls interface to determine how the program should run.
+    behavior = interface.whatToDo()
+    if behavior == 0:
+        fullPipeline()
+    elif behavior == 1:
+        generateManifest()
+    elif behavior == 2:
+        publishToZooniverse()
+    else:
+        print("You broke the pipeline :(")

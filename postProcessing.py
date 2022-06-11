@@ -6,6 +6,46 @@ Created on Thu Jun  9 15:15:09 2022
 """
 from PIL import Image, ImageDraw
 
+    
+
+#rescales pngs
+def rescale(f,scale_factor):
+    with Image.open(f) as im:
+        size = im.size
+        width = size[0]
+        height = size[1]
+        rescaled_size = (width * scale_factor, height * scale_factor)
+        resize_png(f, rescaled_size)
+        
+#works with above
+def resize_png(filename,size):
+    """
+       Overwrite PNG file with a particular width and height
+
+       Parameters
+       ----------
+           filename : string
+               Full path filename with filetype of the desired PNG file.
+           size : tuple, (int,int)
+               Width and height of the new PNG
+
+       Notes
+       -----
+        Should PNG files be overridden or should they just be created in addition to the original PNG?
+
+        Resampling parameter for resizing function is something that should be considered more.
+        The current one, LANCZOS, is native to PILLOW and in their documentation it says it is the
+        one which the best upscaling/downscaling quality
+
+        Could possibly implement a keep_aspect_ratio parameter, but our images should all be squares.
+    """
+
+    im = Image.open(filename)
+    resized_image = im.resize(size,Image.Resampling.LANCZOS)
+    #new_filename = filename.replace(".png","") + "_resized" + ".png"
+    resized_image.save(filename)
+    return filename
+
 def addGrid(imname, step_count = 10):
     '''
     
