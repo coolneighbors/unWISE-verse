@@ -257,7 +257,7 @@ def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0,add
 
     urls = get_radec_urls(ra, dec, minbright=minbright, maxbright=maxbright)
 
-    flist = mpScript.poolHandler(urls, ra, dec, outdir)
+    flist = mpScript.downloadHandler(urls, ra, dec, outdir)
     
     #make sure 10 images are saved for each png - if less than 10, copy last frame until there are ten
     savedURL=urls[len(urls)-1]
@@ -270,18 +270,12 @@ def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0,add
 
     # Rescales PNGs
     if (scale_factor != 1.0):
-        for f in flist:
-            im = Image.open(f)
-            size = im.size
-            width = size[0]
-            height = size[1]
-            rescaled_size = (width * scale_factor, height * scale_factor)
-            resize_png(f, rescaled_size)
+        mpScript.scaleHandler(flist, scale_factor)
     
     #adds grid to pngs
     if (addGrid == True):
-        for f in flist:
-            postProcessing.addGrid(f,gridSize)
+        mpScript.gridHandlder(flist, gridSize)
+    
 
     return flist
 
