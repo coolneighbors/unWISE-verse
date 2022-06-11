@@ -3,6 +3,7 @@ import os
 import shutil
 from PIL import Image
 import postProcessing
+import mpScript
 
 png_anim = "https://vjxontvb73.execute-api.us-west-2.amazonaws.com/png-animation"
 amnh_base_url = "https://amnh-citsci-public.s3-us-west-2.amazonaws.com/"
@@ -256,16 +257,10 @@ def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0,add
 
     urls = get_radec_urls(ra, dec, minbright=minbright, maxbright=maxbright)
 
-    flist = []
-    
-    for url in urls:
-        counter+=1
-        fieldName='field-RA'+str(ra)+'-DEC'+str(dec)+'-'+str(counter)+'.png'
-        fname_dest = _download_one_png(url, outdir, fieldName)
-        flist.append(fname_dest)
+    flist = mpScript.poolHandler(urls, ra, dec, outdir)
     
     #make sure 10 images are saved for each png - if less than 10, copy last frame until there are ten
-    savedURL=url
+    savedURL=urls[len(urls)-1]
     while len(flist) < 10:
         counter+=1
         
