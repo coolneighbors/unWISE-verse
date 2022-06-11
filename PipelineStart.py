@@ -39,7 +39,7 @@ def generateManifest():
     None.
 
     '''
-    login = spout.Login('BYWDummyAccount','NOIRLabBYW')
+    login = Login.Login('BYWDummyAccount','NOIRLabBYW')
     target,manifest = interface.FileLocs()
    
     workingSpout = spout.Spout(18929,login)
@@ -59,7 +59,7 @@ def publishToZooniverse():
     subject_set_id = interface.setID()
     manifest = interface.manifestFile()
     
-    login=spout.Login(user,pwd)
+    login= Login.Login(user,pwd)
     workingSpout = spout.Spout(projectID,login)
     
     subject_set=workingSpout.get_subject_set(subject_set_id)
