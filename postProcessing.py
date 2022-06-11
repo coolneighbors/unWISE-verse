@@ -6,7 +6,6 @@ Created on Thu Jun  9 15:15:09 2022
 """
 from PIL import Image, ImageDraw
 
-    
 
 #rescales pngs
 def rescale(f,scale_factor):
@@ -34,15 +33,13 @@ def resize_png(filename,size):
         Should PNG files be overridden or should they just be created in addition to the original PNG?
 
         Resampling parameter for resizing function is something that should be considered more.
-        The current one, LANCZOS, is native to PILLOW and in their documentation it says it is the
-        one which the best upscaling/downscaling quality
+        Uses Nearest Neighbor algorithm for scaling.
 
         Could possibly implement a keep_aspect_ratio parameter, but our images should all be squares.
     """
 
     im = Image.open(filename)
-    resized_image = im.resize(size,Image.Resampling.LANCZOS)
-    #new_filename = filename.replace(".png","") + "_resized" + ".png"
+    resized_image = im.resize(size,Image.Resampling.NEAREST)
     resized_image.save(filename)
     return filename
 

@@ -240,7 +240,8 @@ def png_set(ra, dec, outdir, minbright=None, maxbright=None,scale_factor=1.0,add
             WiseView image stretch upper pixel value. Default of None
             picks up default value from default_params() utility.
         scale_factor : float, optional
-            PNG image size scaling factor
+            PNG image size scaling factor, use integer values to avoid pixel-value interpolation.
+            Uses Nearest-Neighbor algorithm.
 
     Returns
     -------
@@ -299,15 +300,13 @@ def resize_png(filename,size):
         Should PNG files be overridden or should they just be created in addition to the original PNG?
 
         Resampling parameter for resizing function is something that should be considered more.
-        The current one, LANCZOS, is native to PILLOW and in their documentation it says it is the
-        one which the best upscaling/downscaling quality
+        Uses Nearest Neighbor algorithm for scaling.
 
         Could possibly implement a keep_aspect_ratio parameter, but our images should all be squares.
     """
 
     im = Image.open(filename)
-    resized_image = im.resize(size,Image.Resampling.LANCZOS)
-    #new_filename = filename.replace(".png","") + "_resized" + ".png"
+    resized_image = im.resize(size,Image.Resampling.NEAREST)
     resized_image.save(filename)
     return filename
 

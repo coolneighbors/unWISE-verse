@@ -207,6 +207,7 @@ class Metadata(Data):
             else:
                 field_names_with_private_symbol.append(self.field_names[i])
         return field_names_with_private_symbol
+
     def __str__(self):
         field_names_with_private_symbol = self.getAdjustedFieldNames()
         return "Field Names: " + str(field_names_with_private_symbol) + "\n" + "Values: " + str(self.values)

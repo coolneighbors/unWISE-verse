@@ -6,6 +6,7 @@ Created on Wed Jun  8 12:02:10 2022
 """
 import spout
 import interface
+import Login
 
 
 
@@ -22,8 +23,7 @@ def fullPipeline():
     projectID = interface.projID()
     subject_set_id = interface.setID()
     target,manifest = interface.FileLocs()
-    
-    login = spout.Login(user,pwd)
+    login = Login.Login(user,pwd)
     workingSpout = spout.Spout(projectID,login)
     
     subject_set = workingSpout.get_subject_set(subject_set_id)
