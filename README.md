@@ -25,6 +25,7 @@ pip install panoptes-client
 		os
 		shutil
 		csv
+		python-magic-bin
 
 ```
 * Clone into git repository at github.com/coolneighbors/FullPipeline
@@ -86,7 +87,7 @@ command to run if program contains helper info
 
 ## License
 
-NONE - Not public
+Distributed under the MIT License (see LICENSE.txt)
 
 ## Acknowledgments
 * [panoptes-python-client](https://github.com/zooniverse/panoptes-python-client)
