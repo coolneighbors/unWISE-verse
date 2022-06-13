@@ -7,9 +7,7 @@ Refactored on Tuesday, June 7th
 """
 
 import csv
-import wv
-import os
-
+from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
 from Manifest import Manifest, Defined_Manifest
 from Dataset import Dataset, Zooniverse_Dataset, CN_Dataset
@@ -17,41 +15,30 @@ from Dataset import Dataset, Zooniverse_Dataset, CN_Dataset
 # Errors
 class ProjectIdentificationError(Exception):
     def __init__(self, project_identifier):
-        super(SubjectSetIdentificationError, self).__init__("Project Identifier was not a string or an integer: " + str(project_identifier))
+        super(ProjectIdentificationError, self).__init__(f"Project Identifier was not a string or an integer: {project_identifier}")
 
 class SubjectSetIdentificationError(Exception):
     def __init__(self, subject_set_identifier):
-        super(SubjectSetIdentificationError, self).__init__("Subject Set Identifier was not a string or an integer: " + str(subject_set_identifier))
+        super(SubjectSetIdentificationError, self).__init__(f"Subject Set Identifier was not a string or an integer: {subject_set_identifier}")
 
 class SubjectSetRetrievalError(Exception):
     def __init__(self, subject_set_id):
-        super(InvalidDatasetError, self).__init__("Subject Set Identifier is not associated with any known subject set in this project: " + str(subject_set_id))
-
-class InvalidDatasetError(Exception):
-    def __init__(self, dataset_filename,manifest_header, metadata_keys):
-        bool_list = (key in manifest_header for key in metadata_keys)
-        invalid_metadata_key_indices = [i for i, x in enumerate(bool_list) if not x]
-        invalid_metadata_keys = []
-        for index in invalid_metadata_key_indices:
-            invalid_metadata_keys.append(metadata_keys[index])
-        error_message = "The accessed dataset file at: " + str(dataset_filename) + " is not compliant with the current master manifest header: " + str(manifest_header) + "\n" + "The following entries are mismatched in the dataset file: " + str(invalid_metadata_keys)
-        super(InvalidDatasetError, self).__init__(error_message)
-
+        super(SubjectSetRetrievalError, self).__init__(f"Subject Set Identifier is not associated with any known subject set in this project: {subject_set_id}")
 
 class Spout:
 
     def __init__(self, project_identifier, login):
 
         """
-        Constructs a Spout object, a data pipeline between local files and any accessible Zooniverse project.
-        This logs into Zooniverse as a particular user, links this Spout to a specific Zooniverse project that user has
-        access to, and defines the master manifest header.
+        Initializes a Spout object, a data pipeline between local files and any accessible Zooniverse project.
+        This logs into Zooniverse as a particular user and links this Spout object to a specific Zooniverse project
+        (that the user has access to) via the project_identifier.
 
         Parameters
         ----------
             project_identifier : str or int
-                A generalized identifier for both string-based slugs, defined in the panoptes_client API, or an
-                integer ID number associated with a project (can be found on Zooniverse)
+                A generalized identifier for both string-based slugs, defined in the panoptes_client API (see Notes),
+                or an integer ID number associated with a project (can be found on Zooniverse).
             login : Login object
                 A login object which holds the login details of the user trying to access Zooniverse. Consists of
                 a username and a password.
@@ -61,14 +48,9 @@ class Spout:
             The slug identifier only can work if the owner of the project is the one who is logging in
             since the owner's name is a part of the slug.
 
+            A Zooniverse slug is of the form: "owner_username/project-name-with-dashes-for-spaces".
 
-            A Zooniverse slug is of the form: "owner_username/project-name-with-dashes-for-spaces"
-
-            Change the master manifest header to add new metadata or if you want to increase the total maximum of frames
-            Frames are recognized as frames if they start with f and the rest is an integer. Slots them in the the order they appear
-            in the master header from left to right
         """
-
 
         Panoptes.connect(username=login.username, password=login.password)
 
@@ -82,9 +64,8 @@ class Spout:
 
         self.manifest = None
 
-        print("Project ID: " + str(self.linked_project.id))
-        print("Project Slug: " + str(self.linked_project.slug))
-
+        print(f"Project ID: {self.linked_project.id}")
+        print(f"Project Slug: {self.linked_project.slug}")
 
     def create_subject_set(self, display_name):
         """
@@ -93,12 +74,12 @@ class Spout:
         Parameters
         ----------
             display_name : str
-                A string representing the display name associated with this subject set
+                A string representing the display name associated with this subject set.
 
         Returns
         -------
         subject_set : SubjectSet object
-            A newly created SubjectSet object associated to the linked project on Zooniverse
+            A newly created SubjectSet object associated to the linked project on Zooniverse.
 
         Notes
         -----
@@ -108,7 +89,7 @@ class Spout:
 
         subject_set = SubjectSet()
         subject_set.links.project = self.linked_project
-        subject_set.display_name = display_name
+        subject_set.display_name = copy(display_name)
         subject_set.save()
         return subject_set
 
@@ -121,11 +102,11 @@ class Spout:
             subject_set_identifier : str or int
                 A generalized identifier for both string-based display names, as seen in the linked project, or an
                 integer ID number associated with the subject set (can be found on in the project under the
-                particular subject set)
+                particular subject set).
 
         Returns
         -------
-         True/False: boolean
+         True/False: bool
             A boolean output of whether the subject set exists in the linked project on Zooniverse.
 
         Notes
@@ -195,7 +176,6 @@ class Spout:
                 if (int(subject_set.id) == subject_set_identifier):
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
-
         else:
             raise SubjectSetIdentificationError(subject_set_identifier)
 
@@ -225,6 +205,7 @@ class Spout:
             Just to prevent wasteful redundancy, I implemented a way to ask the user if they are supposed to overwrite
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
+
         dataset = CN_Dataset(dataset_filename)
         if(enable_strict_manifest):
             self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically)
@@ -245,13 +226,13 @@ class Spout:
         Returns
         -------
         subject_data_dicts : List of dictionaries
-            A list of subject data dictionaries generated from the provided manifest CSV
+            A list of subject data dictionaries generated from the provided manifest CSV.
 
         Notes
         -----
-            These subject data dictionaries contain both data, the images path filenames of our flipbooks, and metadata such as the
-            RA and DEC associated with the center of these images. The functionality to include an arbitrary amount of
-            metadata has been implemented.
+            These subject data dictionaries contain both data, the images path filenames of our flipbooks, and metadata
+            such as the RA and DEC associated with the center of these images. The functionality to include an arbitrary
+            amount of metadata has been implemented as well, but RA and DEC are required.
         """
 
         manifest_file = open(manifest_filename)
@@ -259,7 +240,7 @@ class Spout:
         count = 0
         subject_data_dicts = []
         for row in manifest_file_reader:
-            count = count + 1
+            count += 1
             if(count == 1):
                 header = row
             if(count != 1):
@@ -346,10 +327,10 @@ class Spout:
         Notes
         -----
             One point of failure of this function is if a manifest exists but the pngs associated to the manifest's data
-            does not exist. This will result in the code trying to access the image files to send to Zooniverse but it won't
-            be able to do so since they are not there. This could be reason enough to consider a string-based encoding
-            scheme for images in the manifest.
+            does not exist. This will result in the code trying to access the image files to send to Zooniverse but it
+            won't be able to do so since they are not there.
         """
+
         subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
@@ -379,7 +360,12 @@ class Spout:
 
         Notes
         -----
+            Dataset CSV has the form:
 
+            RA DEC metadata3 ...
+            x y z ...
+
+            Potential to use .fits files as well in the future, but this functionality is not yet developed.
         """
 
         self.generate_manifest(manifest_filename, dataset_filename, overwrite_automatically, enable_strict_manifest)
