@@ -154,10 +154,10 @@ class Zooniverse_Dataset(Dataset):
                 metadata_list.append(Metadata(metadata_field_names, row_metadata))
 
                 # set WV parameters to RA and DEC
-                wv.custom_params(RA, DEC)
+                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(RA, DEC, "pngs")
+                flist = wv.png_set(wise_view_parameters, "pngs")
 
                 data_field_names = []
                 for i in range(len(flist)):
@@ -220,9 +220,9 @@ class CN_Dataset(Zooniverse_Dataset):
                 metadata_list.append(Metadata(metadata_field_names, row_metadata))
 
                 # set WV parameters to RA and DEC
-                wv.custom_params(RA, DEC)
+                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(RA, DEC, "pngs", scale_factor=2, addGrid=GRID)
+                flist = wv.png_set(wise_view_parameters, "pngs", scale_factor=2, addGrid=GRID)
 
                 data_field_names = []
                 for i in range(len(flist)):
