@@ -6,11 +6,8 @@ Created on Thursday, June 9th
 
 import csv
 from copy import copy
-import wv
+from flipbooks import wv
 from Data import Data, Metadata
-
-#initialize image manipulation variables
-scaling = 2
 
 # Errors
 class NonUniformFieldsError(Exception):
@@ -160,7 +157,7 @@ class Zooniverse_Dataset(Dataset):
                 wv.custom_params(RA, DEC)
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling, addGrid=False)
+                flist = wv.png_set(RA, DEC, "pngs")
 
                 data_field_names = []
                 for i in range(len(flist)):
@@ -204,15 +201,15 @@ class CN_Dataset(Zooniverse_Dataset):
         with open(dataset_filename, newline='') as targetList:
             reader = csv.DictReader(targetList)
             for row in reader:
-                RA = row['RA']
-                DEC = row['DEC']
-                gridYN = row['!GRID']
+                RA = float(row['RA'])
+                DEC = float(row['DEC'])
+                GRID = int(row['!GRID'])
 
-                # parse gridyn into integer values, only accept '1'
-                if gridYN == '1':
-                    gridYN = 1
+                # parse GRID into boolean values, only accept 1 as True, otherwise GRID is False.
+                if (GRID == 1):
+                    GRID = True
                 else:
-                    gridYN = 0
+                    GRID = False
 
                 row_metadata = []
                 metadata_field_names = []
@@ -224,12 +221,8 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 # set WV parameters to RA and DEC
                 wv.custom_params(RA, DEC)
-
                 # Save all images for parameter set, add grid if toggled for that image
-                if (gridYN == 1):
-                    flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling, addGrid=True)
-                else:
-                    flist = wv.png_set(RA, DEC, "pngs", scale_factor=scaling)
+                flist = wv.png_set(RA, DEC, "pngs", scale_factor=2, addGrid=GRID)
 
                 data_field_names = []
                 for i in range(len(flist)):
