@@ -1,69 +1,75 @@
+"""
+Created on Thursday, June 9th
+
+@author: Austin Humphreys
+"""
+
+from copy import copy
+
 # Errors
 class FieldAndValueMismatchError(Exception):
     def __init__(self, field_names, values):
-        super(FieldAndValueMismatchError, self).__init__("The field names and the values are not the same length: " + str(len(field_names)) + ", " + str(len(values)))
+        super(FieldAndValueMismatchError, self).__init__(f"The field names and the values are not the same length: {len(field_names)} , {len(values)}")
 
 class NonExistentFieldError(Exception):
     def __init__(self, field_name):
-        super(NonExistentFieldError, self).__init__("The field name trying to be removed is not a field: " + str(field_name))
+        super(NonExistentFieldError, self).__init__(f"The field name trying to be accessed is not a field: {field_name}")
 
 class NonExistentPrivateFieldError(Exception):
     def __init__(self, field_name):
-        super(NonExistentPrivateFieldError, self).__init__("The field name trying to be removed was given as private but is not private: " + str(field_name))
+        super(NonExistentPrivateFieldError, self).__init__(f"The field name trying to be removed was given as private but is not private: {field_name}")
 
 class NonUniqueFieldsError(Exception):
     def __init__(self, field_names):
-        super(NonUniqueFieldsError, self).__init__("The field names are not unique for at least one field name: " + str(field_names))
-
-class InvalidMetadataRequestError(Exception):
-    def __init__(self, field_name):
-        super(InvalidMetadataRequestError, self).__init__("The requested metadata " + "\"" + field_name +  "\"" + " could not be found.")
+        seen_field_names = set()
+        duplicate_list = []
+        for field_name in field_names:
+            if field_name in seen_field_names:
+                duplicate_list.append(field_name)
+            else:
+                seen_field_names.add(field_name)
+        if(len(duplicate_list) == 1):
+            super(NonUniqueFieldsError, self).__init__(f"The following field name is not unique: {duplicate_list[0]}")
+        else:
+            super(NonUniqueFieldsError, self).__init__(f"The following field names are not unique: {duplicate_list}")
 
 class ImproperDataComparisonError(Exception):
     def __init__(self, object, other):
-        super(ImproperDataComparisonError, self).__init__("The objects you are trying to compare are not comparable: " + str(type(object)) + " and " + str(type(other)))
+        super(ImproperDataComparisonError, self).__init__(f"The objects you are trying to compare are not comparable: {type(object)} and {type(other)}")
 
 class ImproperMetadataComparisonError(Exception):
     def __init__(self, object, other):
-        super(ImproperMetadataComparisonError, self).__init__("The objects you are trying to compare are not comparable: " + str(type(object)) + " and " + str(type(other)))
+        super(ImproperMetadataComparisonError, self).__init__(f"The objects you are trying to compare are not comparable: {type(object)} and  {type(other)}")
 
 class PrivateMetadataFieldMismatchError(Exception):
     def __init__(self, object, other):
-        super(PrivateMetadataFieldMismatchError, self).__init__("The metadata objects you are trying to compare have a mismatch in which fields are private: " + str(object) + " and " + str(other))
+        super(PrivateMetadataFieldMismatchError, self).__init__(f"The metadata objects you are trying to compare have a mismatch in which fields are private: {object} and {other}")
 
 class InvalidFieldNameError(Exception):
     def __init__(self, field_name):
-        super(InvalidFieldNameError, self).__init__("The provided field name has a privatization character (\"!\") after the first privatization character: " + str(field_name))
-
-
+        super(InvalidFieldNameError, self).__init__(f"The provided field name has a privatization character (\"!\") after the first privatization character: {field_name}")
 
 class Data:
     def __init__(self,field_names = [],data_values = []):
-
         """
-        Constructs a Data object, a container object which resembles a python dictionary except that it is a pair of
+        Initializes a Data object, an object which resembles a dictionary except that it is a pair of
         ordered lists rather than directly linked via keys. Additionally, it will only accept unique field names.
 
         Parameters
         ----------
-            project_identifier : str or int
-                A generalized identifier for both string-based slugs, defined in the panoptes_client API, or an
-                integer ID number associated with a project (can be found on Zooniverse)
-            login : Login object
-                A login object which holds the login details of the user trying to access Zooniverse. Consists of
-                a username and a password.
+            field_names : List of str
+                A list of strings representing the field names of different data fields in the Data object. All field
+                names must be unique strings, otherwise it will throw an error.
+            data_values : List of Any
+                A list of values representing the field values associated, in order, to the different field names in
+                the Data object. Must have the same length as field_names, otherwise it will throw an error.
 
         Notes
         -----
-            The slug identifier only can work if the owner of the project is the one who is logging in
-            since the owner's name is a part of the slug.
-
-
-            A Zooniverse slug is of the form: "owner_username/project-name-with-dashes-for-spaces"
-
-            Change the master manifest header to add new metadata or if you want to increase the total maximum of frames
-            Frames are recognized as frames if they start with f and the rest is an integer. Slots them in the the order they appear
-            in the master header from left to right
+            The container structure of the data object could have been easily replicated with a dictionary, but I
+            wanted extra functionality associated with it, so I made it its own class. I didn't create a
+            dictionary inside of the data object to make sure that the names and values could be easily accessed and in
+            a particular order.
         """
 
         # Check if the field names are in a 1-1 correspondence with values
@@ -73,34 +79,173 @@ class Data:
         elif(len(set(field_names)) != len(field_names)):
             raise NonUniqueFieldsError(field_names)
         else:
-            self.field_names = field_names
-            self.values = data_values
+            self.field_names = copy(field_names)
+            self.values = copy(data_values)
 
     def __eq__(self, other):
+        """
+        Overloads the == operator for the Data object such that two Data objects are equal, if and only if both their
+        field_names and their field_values are equal.
+
+        Parameters
+        ----------
+            other : Data object
+                A Data object which is being equated to the current Data object.
+
+        Returns
+        -------
+        True/False : boolean
+            A boolean value based on whether both the field_names and the field_values are equal.
+
+        Notes
+        -----
+
+        """
+
         if (isinstance(other, Data)):
             return (self.field_names == other.field_names and self.values == other.values)
         else:
             raise ImproperDataComparisonError(self, other)
 
     def have_equal_fields(self,other):
+        """
+        Determines if the field names of two data objects are equal.
+
+        Parameters
+        ----------
+            other : Data object
+                A Data object which is being equated to the current Data object's field names.
+
+        Returns
+        -------
+        True/False : boolean
+            A boolean value based on whether both the field_names are equal.
+
+        Notes
+        -----
+
+        """
+
         if (isinstance(other, Data)):
             return (self.field_names == other.field_names)
         else:
             raise ImproperDataComparisonError(self, other)
 
     def have_equal_values(self,other):
+        """
+        Determines if the field values of two data objects are equal.
+
+        Parameters
+        ----------
+            other : Data object
+                A Data object which is being equated to the current Data object's field values.
+
+        Returns
+        -------
+        True/False : boolean
+            A boolean value based on whether both the field_values are equal.
+
+        Notes
+        -----
+
+        """
+
         if (isinstance(other, Data)):
             return (self.values == other.values)
         else:
             raise ImproperDataComparisonError(self, other)
 
-    def __str__(self):
-        return "Field Names: " + str(self.field_names) + "\n" + "Values: " + str(self.values)
-
     def __len__(self):
+        """
+        Overloads the len() function for the Data object such that the length is the number of field names
+        (which should be equal to the number of field values, otherwise the data object could not have been initialized).
+
+        Returns
+        -------
+        len(self.field_names) : int
+            An integer value based on the the number of field names.
+
+        Notes
+        -----
+
+        """
+
         return len(self.field_names)
 
+    def __getitem__(self, index):
+        """
+        Overloads the [] operator for the Data object such that each index corresponds to a dictionary of a field name
+        and a value corresponding to that index.
+
+        Returns
+        -------
+        data_dict : dict
+            A dictionary of the form, {"name" : str, "value" : Any}
+            An index of the Data object, from 0 to len(Data object)-1.
+        Notes
+        -----
+
+        """
+        data_dict = {"name": self.field_names[index], "value": self.values[index]}
+        return data_dict
+
+    def __str__(self):
+        """
+        Overloads the str() function for the Data object such that a string of the field names and the field values
+        is provided.
+
+        Returns
+        -------
+        string : str
+            Provides a string of the form, f"Field Names: {self.field_names} , Values: {self.values}".
+
+        Notes
+        -----
+
+        """
+
+        return f"Field Names: {self.field_names} , Values: {self.values}"
+
+    def toDictionary(self):
+        """
+        Converts the Data object into a dictionary with the field names as keys and the values as the corresponding
+        values.
+
+        Returns
+        -------
+        dictionary : dict
+            Provides a dictionary of the form, {self.field_names[i]: self.values[i]}
+
+        Notes
+        -----
+
+        """
+
+        return {self.field_names[i]: self.values[i] for i in range(len(self.field_names))}
+
     def addField(self, field_name, value, index = -1):
+        """
+        Adds a field at a specific index to the existing Data object, consisting of a unique field name and any
+        field value.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being added. Must be a unique field name and not already in the
+                Data object.
+            value : Any
+                A data value being associated to the field name being added to the Data object. Does not need to be a unique value,
+                unlike the field name.
+            index : int, optional
+                The index in the Data object where the new field_name and value will be placed. By default, the index
+                is -1 and appends the field name and value to the end of the Data object. Must be an integer in-between
+                0 and len(Data object)-1 (or -1).
+
+        Notes
+        -----
+
+        """
+
         if (not(field_name in self.field_names)):
             if (index == -1):
                 self.field_names.append(field_name)
@@ -114,6 +259,19 @@ class Data:
             raise NonUniqueFieldsError
 
     def removeField(self, field_name):
+        """
+        Removes a field from the existing Data object, which removes both the field name and the associated value.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being removed.
+
+        Notes
+        -----
+
+        """
+
         if (field_name in self.field_names):
             index_to_be_removed = self.field_names.index(field_name)
             self.field_names.pop(index_to_be_removed)
@@ -122,33 +280,163 @@ class Data:
             raise NonExistentFieldError(field_name)
 
 class Metadata(Data):
+
     def __init__(self, field_names = [], metadata_values = []):
+        """
+        Initializes a Metadata object, a child class of a Data object, an object which resembles a dictionary except
+        that it is a pair of ordered lists rather than directly linked via keys. Additionally, it will only accept
+        unique field names. Fields of a Metadata object also have the ability to be private or public.
+
+        Parameters
+        ----------
+            field_names : List of str
+                A list of strings representing the field names of different data fields in the Data object. All field
+                names must be unique strings, otherwise it will throw an error. Field names in the list which start with
+                "!" will be made private automatically.
+            metadata_values : List of Any
+                A list of values representing the field values associated, in order, to the different field names in
+                the Metadata object. Must have the same length as field_names, otherwise it will throw an error.
+
+        Notes
+        -----
+            Field names given to a metadata object can be make private by placing a "!" at the start of the name or can
+            be made private after-the-fact via the setFieldAsPrivate function.
+        """
 
         # Checking if any field names are private upon initialization and if they are unique
         self.private_fields = [False] * len(field_names)
+        adjusted_field_names = copy(field_names)
         for i in range(len(field_names)):
-            field_name = field_names[i]
-            if(field_name[0] == "!"):
-                field_names[i] = field_name[1:]
-                check_field_name = field_name[1:]
+            adjusted_field_name = adjusted_field_names[i]
+            if(adjusted_field_name[0] == "!"):
+                adjusted_field_names[i] = adjusted_field_name[1:]
+                check_field_name = adjusted_field_name[1:]
                 if("!" in check_field_name):
-                    raise InvalidFieldNameError(field_name)
+                    raise InvalidFieldNameError(adjusted_field_name)
                 self.private_fields[i] = True
 
-        super(Metadata, self).__init__(field_names,metadata_values)
+        super(Metadata, self).__init__(adjusted_field_names,metadata_values)
+
+    def __getitem__(self, index):
+        """
+        Overloads the [] operator for the Metadata object such that each index corresponds to a dictionary of a field
+        name and a value corresponding to that index.
+
+        Returns
+        -------
+        metadata_dict : dict
+            A dictionary of the form, {"name" : str, "value" : Any}
+            An index of the Metadata object, from 0 to len(Metadata object)-1.
+        Notes
+        -----
+
+        """
+
+        field_names_with_private_symbol = self.getAdjustedFieldNames()
+        metadata_dict = {"name": field_names_with_private_symbol[index], "value": self.values[index]}
+        return metadata_dict
+
+    def __str__(self):
+        """
+        Overloads the str() function for the Metadata object such that a string of the adjusted field names and the
+        field values is provided.
+
+        Returns
+        -------
+        string : str
+            Provides a string of the form, f"Field Names: {field_names_with_private_symbol} , Values: {self.values}".
+
+        Notes
+        -----
+
+        """
+
+        field_names_with_private_symbol = self.getAdjustedFieldNames()
+        return f"Field Names: {field_names_with_private_symbol} , Values: {self.values}"
+
+    def toDictionary(self):
+        """
+        Converts the Metadata object into a dictionary with the adjusted field names as keys and the values as the corresponding
+        values.
+
+        Returns
+        -------
+        dictionary : dict
+            Provides a dictionary of the form, {field_names_with_private_symbol[i]: self.values[i]}
+
+        Notes
+        -----
+
+        """
+
+        field_names_with_private_symbol = self.getAdjustedFieldNames()
+        return {field_names_with_private_symbol[i]: self.values[i] for i in range(len(self.field_names))}
 
     def setFieldAsPrivate(self, field_name):
+        """
+        Sets an existing field as private, which updates the private_fields boolean list.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being made private.
+
+        Notes
+        -----
+
+        """
+
         if (field_name in self.field_names):
             field_name_index = self.field_names.index(field_name)
             if(not self.private_fields[field_name_index]):
                 self.private_fields[field_name_index] = True
             else:
-                print("Field name " + str(field_name) + " is already private.")
-            return
+                print(f"{field_name} is already private.")
+        else:
+            raise NonExistentFieldError(field_name)
+
+    def setFieldAsPublic(self, field_name):
+        """
+        Sets an existing field as public, which updates the private_fields boolean list.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being made public.
+
+        Notes
+        -----
+
+        """
+
+        if (field_name in self.field_names):
+            field_name_index = self.field_names.index(field_name)
+            if(self.private_fields[field_name_index]):
+                self.private_fields[field_name_index] = False
+            else:
+                print(f"{field_name} is already public.")
         else:
             raise NonExistentFieldError(field_name)
 
     def isPrivateField(self,field_name):
+        """
+        Determines if an existing field is private.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being determined if it is private.
+
+        Returns
+        -------
+        self.private_fields[index_of_field_name] : bool
+            Provides the boolean value of the private_fields list for the provided field name.
+
+        Notes
+        -----
+
+        """
+
         if (field_name[0] == "!" and (field_name[1:] in self.field_names)):
             index_of_field_name = self.field_names.index(field_name[1:])
             return self.private_fields[index_of_field_name]
@@ -159,9 +447,52 @@ class Metadata(Data):
             raise NonExistentFieldError(field_name)
 
     def isPublicField(self,field_name):
+        """
+        Determines if an existing field is public.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being determined if it is public.
+
+        Returns
+        -------
+        not self.isPrivateField(field_name) : bool
+            Provides the negated value from the isPrivateField function.
+
+        Notes
+        -----
+
+        """
+
         return not self.isPrivateField(field_name)
 
     def addField(self, field_name, value, index = -1, make_private = False):
+        """
+        Adds a field at a specific index to the existing Metadata object, consisting of a unique field name and any
+        field value. There is an additional parameter to set the added field as private.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being added. Must be a unique field name and not already in the
+                Metadata object.
+            value : Any
+                A metadata value being associated to the field name being added to the Metadata object. Does not need
+                to be a unique value, unlike the field name.
+            index : int, optional
+                The index in the Metadata object where the new field_name and value will be placed. By default, the index
+                is -1 and appends the field name and value to the end of the Data object. Must be an integer in-between
+                0 and len(Metadata object)-1 (or -1).
+            make_private : bool
+                A boolean which sets the newly added field as private (True) or public (False). By default it is set to
+                False.
+
+        Notes
+        -----
+
+        """
+
         if (index == -1):
             self.private_fields.append(False)
         elif (index >= 0 and index < len(self.field_names)):
@@ -177,6 +508,20 @@ class Metadata(Data):
             self.setFieldAsPrivate(field_name)
 
     def removeField(self, field_name):
+        """
+        Removes a field from the existing Metadata object, which removes both the field name, the associated value,
+        and the associated boolean for whether it is a private field.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being removed.
+
+        Notes
+        -----
+
+        """
+
         if(field_name[0] == "!" and (field_name[1:] in self.field_names)):
             index_of_field_name = self.field_names.index(field_name[1:])
             if(self.private_fields[index_of_field_name]):
@@ -191,7 +536,51 @@ class Metadata(Data):
         else:
             raise NonExistentFieldError(field_name)
 
+    def __eq__(self, other):
+        """
+        Overloads the == operator for the Metadata object such that two Metadata objects are equal, if and only if both their
+        field_names, their field_values, and their private_fields are equal.
+
+        Parameters
+        ----------
+            other : Metadata object
+                A Metadata object which is being equated to the current Metadata object.
+
+        Returns
+        -------
+        True/False : boolean
+            A boolean value based on whether both the field_names, the field_values, and the private_fields
+            are equal.
+
+        Notes
+        -----
+
+        """
+
+        if (isinstance(other, Metadata)):
+            return (self.field_names == other.field_names and self.values == other.values and self.private_fields == other.private_fields)
+        else:
+            raise ImproperDataComparisonError(self, other)
+
     def have_equal_fields(self,other):
+        """
+        Determines if the field names and private fields of two Metadata objects are equal.
+
+        Parameters
+        ----------
+            other : Metadata object
+                A Metadata object which is being equated to the current Metadata object's field names and private fields
+
+        Returns
+        -------
+        True/False : boolean
+            A boolean value based on whether both the field_names and private_fields are equal.
+
+        Notes
+        -----
+
+        """
+
         if (isinstance(other, Metadata)):
             if(self.private_fields != other.private_fields):
                 raise PrivateMetadataFieldMismatchError(self, other)
@@ -200,6 +589,22 @@ class Metadata(Data):
             raise ImproperMetadataComparisonError(self, other)
 
     def getAdjustedFieldNames(self):
+        """
+        Provides the field names of the current Metadata object with the privatization character ("!") in the first
+        index of the name string if it is a private field.
+
+
+        Returns
+        -------
+        field_names_with_private_symbol : List of str
+            A list of strings representing the field names but with a "!" at the front of the name if the field is
+            private
+
+        Notes
+        -----
+
+        """
+
         field_names_with_private_symbol = []
         for i in range(len(self.field_names)):
             if (self.private_fields[i]):
@@ -207,7 +612,3 @@ class Metadata(Data):
             else:
                 field_names_with_private_symbol.append(self.field_names[i])
         return field_names_with_private_symbol
-
-    def __str__(self):
-        field_names_with_private_symbol = self.getAdjustedFieldNames()
-        return "Field Names: " + str(field_names_with_private_symbol) + "\n" + "Values: " + str(self.values)
