@@ -4,21 +4,22 @@ Created on Wed Jun  8 12:02:10 2022
 
 @author: Noah Schapera
 """
+
 import spout
 import interface
 import Login
 
 
-
 def fullPipeline():
-    '''
+    """
     Goes through the entire pipeline. Generates manifest, uploads to zooniverse
 
     Returns
     -------
     None.
 
-    '''
+    """
+
     user,pwd = interface.getCreds()
     projectID = interface.projID()
     subject_set_id = interface.setID()
@@ -28,9 +29,10 @@ def fullPipeline():
     
     subject_set = workingSpout.get_subject_set(subject_set_id)
     workingSpout.upload_data_to_subject_set(subject_set,manifest,target)
-    
+
+
 def generateManifest():
-    '''
+    """
     Just downloads png's and generates manifest.
     Not sure exactly what the use case for this is, but it seemed like a good thing to add
 
@@ -38,22 +40,25 @@ def generateManifest():
     -------
     None.
 
-    '''
+    """
+
     login = Login.Login('BYWDummyAccount','NOIRLabBYW')
     target,manifest = interface.FileLocs()
    
     workingSpout = spout.Spout(18929,login)
     workingSpout.generate_manifest(manifest,target)
-    
+
+
 def publishToZooniverse():
-    '''
+    """
     Publishes an existing manifest and previously downloaded png's to Zooniverse'
 
     Returns
     -------
     None.
 
-    '''
+    """
+
     user,pwd = interface.getCreds()
     projectID = interface.projID()
     subject_set_id = interface.setID()
