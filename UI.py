@@ -7,8 +7,37 @@ Created on Mon Jun 13 10:14:59 2022
 
 import tkinter as tk
 from functools import partial
+'''
+full pipeline:
+    username
+    password
+    project ID
+    subject set ID
+    target set name
+    manifest name
 
 
+generate manifest:
+    target set name
+    manifest name
+    
+publish to zooniverse:
+    username
+    password
+    project ID
+    subject set ID
+    manifest name
+    
+'''
+
+
+def configWindow(rows,cols,title):
+    window = tk.Tk()
+    window.title(title)
+    window.rowconfigure(list(range(rows)),minsize=50,weight=1)
+    window.columnconfigure(list(range(cols)), minsize=50, weight=1)
+    
+    return window
     
 
 def validateLogin(ent_user,ent_pass):
@@ -17,8 +46,6 @@ def validateLogin(ent_user,ent_pass):
     
     print(username)
     print(password)
-    
-    return
 
 
 def makeEntryField(label,window,outputVar,hide=False):
@@ -32,53 +59,70 @@ def makeEntryField(label,window,outputVar,hide=False):
     lbl.grid(row=0,column=0,sticky='s')
     ent.grid(row=1,column=0,sticky='n')
     
-    return frm
-    
-def rmFrm(window, frm):
-    frm.grid_forget()
-    
-def restFrm(window,frm):
-    frm.grid(row=0,column=0,padx=10,pady=10)
+    return frm, ent
+
+
     
     
 
-def main(validateLogin,rmFrm,restFrm):
-    window = tk.Tk()
-    window.title("Test Entry")
-    window.rowconfigure([0,1],minsize=50,weight=1)
-    window.columnconfigure([0,1,2], minsize=50, weight=1)
+def main(validateLogin):
     
+    window = configWindow(3,3,'Data Pipeline')
+
     #user entry
     username=tk.StringVar()
-    userFrm2=makeEntryField('Username2',window,username)
+    frm_username,ent_username=makeEntryField('Zooniverse Username',window,username)
 
     
     #password entry
     password = tk.StringVar()
+    frm_password,ent_password=makeEntryField('Zooniverse Password',window,password,hide=True)
     
-    passFrm2=makeEntryField('Password2',window,password,hide=True)
+
+
+    
+    #proj ID entry
+    projID = tk.StringVar()
+    frm_projID,ent_projID=makeEntryField('Project ID',window,projID)
+    
+    #set ID entry
+    setID = tk.StringVar()
+    frm_setID,ent_setID=makeEntryField('Set ID',window,setID)
     
     
-    validateLogin=partial(validateLogin,username,password)
-    rmFrm = partial(rmFrm,window,userFrm2)
-    restFrm = partial(restFrm,window,userFrm2)    
+    
+    #targets entry
+    targetFile=tk.StringVar()
+    frm_targetFile,ent_targetFile=makeEntryField('Target List Filename',window,targetFile)
+    
+    #manifest entry
+    manifestFile = tk.StringVar()
+    frm_manifestFile,ent_manifestFile=makeEntryField('Manifest Filename',window,manifestFile)
+    
+    
+       
     
     #button
-    btn_submit = tk.Button(master = window, text = "Submit", command=validateLogin)
-    btn_remove = tk.Button(master = window, text = "Remove", command=rmFrm)
-    btn_restore =tk.Button(master = window, text = "Restore", command=restFrm)
-    
-    btn_submit.grid(row=0,column=2,pady=10,padx=10)
-    passFrm2.grid(row=0,column=1,pady=10,padx=10)
-    userFrm2.grid(row=0,column=0,pady=10,padx=10)
-    btn_remove.grid(row=1,column=0,pady=10,padx=10)
-    btn_restore.grid(row=1,column=1,pady=10,padx=10)
+    btn_submit = tk.Button(master = window, text = "Submit", command=partial(validateLogin,ent_username,ent_password))
     
     
     
+    
+    
+    
+    frm_username.grid(row=0,column=0,pady=10,padx=10)
+    frm_password.grid(row=1,column=0,pady=10,padx=10)
+    
+    frm_projID.grid(row=0,column=1,pady=10,padx=10)
+    frm_setID.grid(row=1,column=1,pady=10,padx=10)
+    
+    frm_targetFile.grid(row=0,column=2,pady=10,padx=10)
+    frm_manifestFile.grid(row=1,column=2,pady=10,padx=10)
+    
+    btn_submit.grid(row=2,column=1,pady=10,padx=10)
     
     window.mainloop()
 
     
 if __name__ == "__main__":
-    main(validateLogin,rmFrm,restFrm)
+    main(validateLogin)
