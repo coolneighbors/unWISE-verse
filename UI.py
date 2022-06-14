@@ -29,8 +29,18 @@ publish to zooniverse:
     manifest name
     
 '''
-
-
+def open_popup(window):
+   top= tk.Toplevel(window)
+   top.title("Help")
+   tk.Label(top, text= 'How to use: Select pipeline mode using top row of buttons. \n \
+            * Generate a manifest / data without publishing - [manifest] \n \
+            * Upload an existing manifest and data to zooniverse -[upload] \n \
+            * Run the whole pipeline to generate a manifest / data from target list and upload to zooniverse -[full] \n \
+            \n \
+            For : [manifest] : Only target filename and manifest filename field are required.\n \
+            : [upload]   : Only username, password, project ID, subject set ID, and manifest filename are requred\n \
+            : [full]     : All fields are required.').pack()
+                            
 def configWindow(rows,cols,title):
     window = tk.Tk()
     window.title(title)
@@ -40,12 +50,20 @@ def configWindow(rows,cols,title):
     return window
     
 
-def validateLogin(ent_user,ent_pass):
-    username = ent_user.get()
-    password = ent_pass.get()
+def validateLogin(ent_username,ent_password,ent_projID,ent_setID,ent_targetFile,ent_manifestFile):
+    username = ent_username.get()
+    password = ent_password.get()
+    projectID = ent_projID.get()
+    setID = ent_setID.get()
+    targetFile = ent_targetFile.get()
+    manifestFile = ent_manifestFile.get()
     
-    print(username)
-    print(password)
+    print('user: '+username)
+    print('pass: '+password)
+    print('proj: '+projectID)
+    print('set: '+setID)
+    print('target: '+targetFile)
+    print('manifest: '+manifestFile)
 
 
 def makeEntryField(label,window,outputVar,hide=False):
@@ -65,7 +83,7 @@ def makeEntryField(label,window,outputVar,hide=False):
     
     
 
-def main(validateLogin):
+def main(validateLogin,open_popup):
     
     window = configWindow(3,3,'Data Pipeline')
 
@@ -103,7 +121,10 @@ def main(validateLogin):
        
     
     #button
-    btn_submit = tk.Button(master = window, text = "Submit", command=partial(validateLogin,ent_username,ent_password))
+    btn_submit = tk.Button(master = window, text = "Submit", command=partial(validateLogin,ent_username,ent_password,ent_projID,ent_setID,ent_targetFile,ent_manifestFile))
+    
+    
+    btn_help = tk.Button(master = window, text = "Help", command=partial(open_popup,window))
     
     
     
@@ -121,8 +142,11 @@ def main(validateLogin):
     
     btn_submit.grid(row=2,column=1,pady=10,padx=10)
     
+    
+    btn_help.grid(row=2,column=0,pady=10,padx=10)
+    
     window.mainloop()
 
     
 if __name__ == "__main__":
-    main(validateLogin)
+    main(validateLogin,open_popup)
