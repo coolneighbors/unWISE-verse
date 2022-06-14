@@ -6,11 +6,11 @@ Created on Wed Jun  8 12:02:10 2022
 """
 
 import spout
-import interface
 import Login
+import UI
 
 
-def fullPipeline():
+def fullPipeline(ui):
     """
     Goes through the entire pipeline. Generates manifest, uploads to zooniverse
 
@@ -20,10 +20,15 @@ def fullPipeline():
 
     """
 
-    user,pwd = interface.getCreds()
-    projectID = interface.projID()
-    subject_set_id = interface.setID()
-    target,manifest = interface.FileLocs()
+    user = ui.acc_username
+    pwd = ui.acc_password
+    
+    projectID = ui.acc_projectID
+    subject_set_id = ui.acc_setID
+    
+    target = ui.acc_targetFile
+    manifest = ui.acc_manifestFile
+    
     login = Login.Login(user,pwd)
     workingSpout = spout.Spout(projectID,login)
     
@@ -31,7 +36,7 @@ def fullPipeline():
     workingSpout.upload_data_to_subject_set(subject_set,manifest,target)
 
 
-def generateManifest():
+def generateManifest(ui):
     """
     Just downloads png's and generates manifest.
     Not sure exactly what the use case for this is, but it seemed like a good thing to add
@@ -43,13 +48,14 @@ def generateManifest():
     """
 
     login = Login.Login('BYWDummyAccount','NOIRLabBYW')
-    target,manifest = interface.FileLocs()
+    target = ui.acc_targetFile
+    manifest = ui.acc_manifestFile
    
     workingSpout = spout.Spout(18929,login)
     workingSpout.generate_manifest(manifest,target)
 
 
-def publishToZooniverse():
+def publishToZooniverse(ui):
     """
     Publishes an existing manifest and previously downloaded png's to Zooniverse'
 
@@ -59,10 +65,13 @@ def publishToZooniverse():
 
     """
 
-    user,pwd = interface.getCreds()
-    projectID = interface.projID()
-    subject_set_id = interface.setID()
-    manifest = interface.manifestFile()
+    user = ui.acc_username
+    pwd = ui.acc_password
+    
+    projectID = ui.acc_projectID
+    subject_set_id = ui.acc_setID
+    
+    manifest = ui.acc_manifestFile
     
     login= Login.Login(user,pwd)
     workingSpout = spout.Spout(projectID,login)
@@ -72,13 +81,14 @@ def publishToZooniverse():
     
     
 if __name__ == "__main__":
+    
+    ui=UI.UI_obj()
+    if (ui.acc_state == 'f'):
+        fullPipeline(ui)
+    elif (ui.acc_state == 'm'):
+        generateManifest(ui)
+    elif (ui.acc_state == 'u'):
+        publishToZooniverse(ui)
     #Calls interface to determine how the program should run.
-    behavior = interface.whatToDo()
-    if behavior == 0:
-        fullPipeline()
-    elif behavior == 1:
-        generateManifest()
-    elif behavior == 2:
-        publishToZooniverse()
     else:
         print("You broke the pipeline :(")
