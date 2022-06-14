@@ -6,6 +6,9 @@ Created on Mon Jun 13 10:14:59 2022
 """
 
 import tkinter as tk
+from tkinter import ttk
+from tkinter import filedialog as fd
+from tkinter.messagebox import showinfo
 
 '''
 full pipeline:
@@ -33,7 +36,7 @@ publish to zooniverse:
 class UI_obj:
     
     def __init__(self):
-        self.configWindow(3,4,'Data Pipeline')
+        self.configWindow(4,4,'Data Pipeline')
         self.varInit()
         self.frameInit()
         self.buttonInit()
@@ -103,15 +106,15 @@ class UI_obj:
         
         Window is 4x3 array. 
         
-        ------------------------------------
-        | username |  projID  | targetFile |
-        ------------------------------------
-        | password |  setID   |manifestFile|
-        ------------------------------------
-        |   help   |  submit  |            |
-        ------------------------------------
-        | manifest |  upload  |    full    |
-        ------------------------------------
+        -------------------------------------------------
+        | username |  projID  | targetFile | tarSearch  |
+        -------------------------------------------------
+        | password |  setID   |manifestFile| manSearch  |
+        -------------------------------------------------
+        |   help   |  submit  |            |            |
+        -------------------------------------------------
+        | manifest |  upload  |    full    |            |
+        -------------------------------------------------
         
 
         Returns
@@ -136,8 +139,13 @@ class UI_obj:
         self.btn_upload.grid(row=3,column=1,padx=10,pady=10)
         self.btn_full.grid(row=3,column=2,padx=10,pady=10)
         
+        self.btn_tarFile.grid(row=0,column=3,padx=10,pady=10)
+        self.btn_manFile.grid(row=1,column=3,padx=10,pady=10)
+        
         
     def buttonInit(self):
+        
+    
         '''
         Makes all the buttons we use for the UI - connects each button to a function
         Note - button functions cannot have arguments which is why I had to wrap this all in a class. Ugh. 
@@ -154,7 +162,38 @@ class UI_obj:
         self.btn_upload = tk.Button(master = self.window, text = "Upload", command=self.stateU)
         self.btn_full = tk.Button(master = self.window, text = "Full", command=self.stateF)
         
-    
+        self.btn_tarFile = tk.Button(master = self.window, text = "Search", command=self.select_file_target)
+        self.btn_manFile = tk.Button(master = self.window, text = "Search", command=self.select_file_manifest)
+        
+    def select_file_manifest(self):
+        filetypes = (
+            ('CSV files', '*.csv'),
+            ('All files', '*.*')
+        )
+
+        filename = fd.askopenfilename(
+            title='Open a file',
+            initialdir='/',
+            filetypes=filetypes)
+        
+        self.ent_manifestFile.delete(0,tk.END)
+        self.ent_manifestFile.insert(0,filename)
+        
+    def select_file_target(self):
+        filetypes = (
+            ('CSV files', '*.csv'),
+            ('All files', '*.*')
+        )
+
+        filename = fd.askopenfilename(
+            title='Open a file',
+            initialdir='/',
+            filetypes=filetypes)
+        
+        self.ent_targetFile.delete(0,tk.END)
+        self.ent_targetFile.insert(0,filename)
+        
+
     def open_popup(self):
        '''
         Generates a help popup with instructions on how to use the program
@@ -298,3 +337,4 @@ class UI_obj:
     
 if __name__ == "__main__":
     ui=UI_obj()
+    ui.printout()
