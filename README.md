@@ -8,6 +8,8 @@ FullPipeline allows a user to quickly download a large set of target data from t
 * Valid Zooniverse login credentials, contributor access to an existing project. 
 * Python 3.10
 * Python Packages:
+	* python-magic-bin
+	* flipbooks
 	* Panoptes-Client
 	* Pillow
 	* getpass
@@ -15,6 +17,7 @@ FullPipeline allows a user to quickly download a large set of target data from t
 	* os
 	* shutil
 	* csv
+	* tkinter
 ### Installing
 * Dowload python packages as nescessary (recommended to use pip or similar)
 ```
@@ -26,6 +29,8 @@ pip install panoptes-client
 		shutil
 		csv
 		python-magic-bin
+		git+https://github.com/coolneighbors/flipbooks.git
+		tkinter
 
 ```
 * Clone into git repository at github.com/coolneighbors/FullPipeline
@@ -64,10 +69,19 @@ You can turn off cross checking master-header by changing the enable_strict_mani
 
 ## Help
 
-We need to make a helper command! This section is reserved for that.
-```
-command to run if program contains helper info
-```
+In the UI, select the [Help] button to view instructions on program operation. The following text will appear in a popup window.
+
+How to use: Select pipeline mode using top row of buttons. 
+	* Generate a manifest / data without publishing - [manifest] 
+	* Upload an existing manifest and data to zooniverse -[upload]
+	* Run the whole pipeline to generate a manifest / data from target list and upload to zooniverse -[full]
+
+For 
+ [manifest]  : Only target filename and manifest filename field are required.
+ [upload] : Only username, password, project ID, subject set ID, and manifest filename are required
+ [full] : All fields are required.
+
+
 
 ## Authors
 [Noah Schapera](https://www.linkedin.com/in/noah-schapera-86303a1b9/)
@@ -85,9 +99,18 @@ command to run if program contains helper info
 	
 	To Do Before Release: Add multiprocessing to data downloading. Add compatability with .fits files. Add GUI
 
+0.2 -- Refactoring flipbooks into python package, UI improvements, multiprocessing added.
+
+    Added: GUI -- allows user to easily input Zooniverse credentials, filenames, and project/subject set ID. 
+	    Multiprocessing - significantly speeds up image download time by using multiple threads at once. 
+	Refactored: flipbooks -- Transfered wv.py and related scripts to flipbooks repo. Created python package from that repo. 
+	To Do: Compatability with FITS files. Make UI run throghout program rather than only at the start. Add more options for metadata. 
+	
 ## License
 
 Distributed under the MIT License (see LICENSE.txt)
 
 ## Acknowledgments
 * [panoptes-python-client](https://github.com/zooniverse/panoptes-python-client)
+* [tkinter tutorial](https://realpython.com/python-gui-tkinter/)
+* [multiprocessing tutorial](https://tutorialedge.net/python/python-multiprocessing-tutorial/)
