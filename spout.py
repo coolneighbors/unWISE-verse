@@ -27,7 +27,7 @@ class SubjectSetRetrievalError(Exception):
 
 class Spout:
 
-    def __init__(self, project_identifier, login):
+    def __init__(self, project_identifier, login, display_printouts = False):
 
         """
         Initializes a Spout object, a data pipeline between local files and any accessible Zooniverse project.
@@ -42,6 +42,8 @@ class Spout:
             login : Login object
                 A login object which holds the login details of the user trying to access Zooniverse. Consists of
                 a username and a password.
+            display_printouts : bool, optional
+                Used to determine whether to display progress information in the console.
 
         Notes
         -----
@@ -63,9 +65,11 @@ class Spout:
             raise ProjectIdentificationError(project_identifier)
 
         self.manifest = None
+        self.display_printouts = display_printouts
 
-        print(f"Project ID: {self.linked_project.id}")
-        print(f"Project Slug: {self.linked_project.slug}")
+        if(self.display_printouts):
+            print(f"Project ID: {self.linked_project.id}")
+            print(f"Project Slug: {self.linked_project.slug}")
 
     def create_subject_set(self, display_name):
         """
@@ -166,6 +170,8 @@ class Spout:
             for subject_set in self.linked_project.links.subject_sets:
                 subject_set.reload()
                 if(subject_set.raw["display_name"] == subject_set_identifier):
+                    if(self.display_printouts):
+                        print("Subject set retrieved from Zooniverse.")
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
 
@@ -174,6 +180,8 @@ class Spout:
             for subject_set in self.linked_project.links.subject_sets:
                 subject_set.reload()
                 if (int(subject_set.id) == subject_set_identifier):
+                    if(self.display_printouts):
+                        print("Subject set retrieved from Zooniverse.")
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
         else:
@@ -206,11 +214,14 @@ class Spout:
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
 
-        dataset = CN_Dataset(dataset_filename)
+        dataset = CN_Dataset(dataset_filename,self.display_printouts)
         if(enable_strict_manifest):
-            self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically)
+            self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts)
         else:
-            self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically)
+            self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts)
+
+        if(self.display_printouts):
+            print("Manifest created.")
 
     def generate_subject_data_dicts(self,manifest_filename):
         """
@@ -291,6 +302,10 @@ class Spout:
             subject.metadata.update(metadata_dict)
             subject.save()
             subjects.append(subject)
+
+        if(self.display_printouts):
+            print("Subjects generated.")
+
         return subjects
 
     def fill_subject_set(self, subject_set, subjects):
@@ -311,6 +326,9 @@ class Spout:
         """
         subject_set.add(subjects)
         subject_set.save()
+
+        if(self.display_printouts):
+            print("Subject set filled.")
         
     def publish_existing_manifest(self,subject_set,manifest_filename):
         """
@@ -334,6 +352,9 @@ class Spout:
         subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
+
+        if(self.display_printouts):
+            print("Existing Manifest Subjects Published to Zooniverse.")
 
     def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None, enable_strict_manifest = True):
         """
@@ -373,4 +394,6 @@ class Spout:
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
         self.manifest = None
-        print("Subjects Uploaded")
+
+        if(self.display_printouts):
+            print("Subjects Uploaded to Zooniverse.")
