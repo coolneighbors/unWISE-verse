@@ -231,13 +231,20 @@ class CN_Dataset(Zooniverse_Dataset):
                 RA = float(row['RA'])
                 DEC = float(row['DEC'])
                 GRID = int(row['!GRID'])
+                SCALE = row['!SCALE']
+                
+                if SCALE != '':
+                    SCALE = int(SCALE)
+                else:
+                    SCALE = 1
+                
 
                 # parse GRID into boolean values, only accept 1 as True, otherwise GRID is False.
                 if (GRID == 1):
                     GRID = True
                 else:
                     GRID = False
-
+                    
                 row_metadata = []
                 metadata_field_names = []
                 for key in row.keys():
@@ -245,11 +252,12 @@ class CN_Dataset(Zooniverse_Dataset):
                 for key in row:
                     row_metadata.append(row[key])
                 metadata_list.append(Metadata(metadata_field_names, row_metadata))
-
+                
                 # set WV parameters to RA and DEC
                 wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
+
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(wise_view_parameters, "pngs", scale_factor=2, addGrid=GRID)
+                flist = wv.png_set(wise_view_parameters, "pngs", scale_factor=SCALE, addGrid=GRID)
 
                 if (display_printouts):
                     print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
