@@ -23,8 +23,8 @@ def fullPipeline(ui):
     user = ui.acc_username
     pwd = ui.acc_password
 
-    projectID = ui.acc_projectID
-    subject_set_id = ui.acc_setID
+    projectID = int(ui.acc_projectID)
+    subject_set_id = int(ui.acc_setID)
 
     target = ui.acc_targetFile
     manifest = ui.acc_manifestFile
@@ -68,8 +68,8 @@ def publishToZooniverse(ui):
     user = ui.acc_username
     pwd = ui.acc_password
     
-    projectID = ui.acc_projectID
-    subject_set_id = ui.acc_setID
+    projectID = int(ui.acc_projectID)
+    subject_set_id = int(ui.acc_setID)
     
     manifest = ui.acc_manifestFile
     

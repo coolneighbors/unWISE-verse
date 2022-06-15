@@ -105,7 +105,7 @@ class UI_obj:
         '''
         Lays out all of the widgets onto the window using the grid allign functionality. 
         
-        Window is 4x3 array. 
+        Window is 4x4 array. 
         
         -------------------------------------------------
         | username |  projID  | targetFile | tarSearch  |
@@ -303,8 +303,8 @@ class UI_obj:
             self.acc_state = self.state
             self.acc_username = self.username
             self.acc_password = self.password
-            self.acc_projectID = int(self.projectID)
-            self.acc_setID = int(self.setID)
+            self.acc_projectID = self.projectID
+            self.acc_setID = self.setID
             self.acc_targetFile = self.targetFile
             self.acc_manifestFile = self.manifestFile
 
