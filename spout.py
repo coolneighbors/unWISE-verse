@@ -354,7 +354,7 @@ class Spout:
         self.fill_subject_set(subject_set, subjects)
 
         if(self.display_printouts):
-            print("Existing Manifest Subjects Published to Zooniverse.")
+            print("The existing manifest subjects have been published to Zooniverse.")
 
     def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None, enable_strict_manifest = True):
         """
@@ -396,4 +396,4 @@ class Spout:
         self.manifest = None
 
         if(self.display_printouts):
-            print("Subjects Uploaded to Zooniverse.")
+            print("Subjects uploaded to Zooniverse.")

@@ -133,19 +133,19 @@ class Manifest:
                 writer = csv.writer(f)
                 writer.writerow([*self.header.metadata_fields,*self.header.data_fields])
                 if(display_printouts):
-                    print("Header Created.")
+                    print("Header created.")
                 for row in self.information_table:
                     writer.writerow(row)
                 f.close()
                 if(display_printouts):
-                    print("Manifest Generation Complete.")
+                    print("Manifest generation complete.")
             elif(".fits" in manifest_filename):
                 print("Currently no functionality for .fits files")
             else:
                 raise InvalidManifestFileError(manifest_filename)
         else:
             if (display_printouts):
-                print("Existing Manifest Preserved.")
+                print("Existing manifest preserved.")
             
 
 

@@ -58,14 +58,23 @@ The grid metadata allows the user to decide whether a grid will be overlayed ont
 
 * Navigate to FullPipeline directory, and in cmd/powershell enter the command
 ```
-python ./PipelineStart.py/
+python ./ZooniversePipeline.py/
 ```
 ## Notes
 
 FullPipeline uses a semi-modular metadata system. In order to add another line of metadata to the subject set, add a ![metadata] column to both the targets.csv and ![metadata] column to the second row of master_header.txt
 Failure to do so will result in an error message.
 
-You can turn off cross checking master-header by changing the enable_strict_manifest field in the generate_manifest function of spout.py to false. This is not reccomended.
+You can turn off cross-checking with a master_header.txt file by changing the enable_strict_manifest field in the generate_manifest function of spout.py to false. This is not recommended.
+
+The master_header.txt file has the following format:
+
+*Assuming a delimiter of " "*
+```
+DataFieldName1 DataFieldName2 DataFieldName3 ...
+MetadataFieldName1 MetadataFieldName2 MetadataFieldName3 ...
+```
+The number of data field names and metadata field names does **not** need to match.
 
 ## Help
 
