@@ -4,11 +4,12 @@ Created on Mon Jun 13 10:14:59 2022
 
 @author: Noah Schapera
 """
-
+import threading
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 from tkinter.messagebox import showinfo
+from ZooniversePipeline import fullPipeline, generateManifest, publishToZooniverse
 
 '''
 full pipeline:
@@ -43,7 +44,6 @@ class UI_obj:
         self.layoutInit()
         self.window.mainloop()
 
-        
 
     '''
     STATE FUNCTIONS: 
@@ -78,6 +78,7 @@ class UI_obj:
         self.acc_setID=''
         self.acc_targetFile=''
         self.acc_manifestFile=''
+        self.printProgress = tk.IntVar(value=0)
 
     def frameInit(self):
         '''
@@ -141,11 +142,11 @@ class UI_obj:
         
         self.btn_tarFile.grid(row=0,column=3,padx=10,pady=10)
         self.btn_manFile.grid(row=1,column=3,padx=10,pady=10)
-        
+
+        self.btn_printProgress.grid(row=2, column=3, padx=10, pady=10)
         
     def buttonInit(self):
-        
-    
+
         '''
         Makes all the buttons we use for the UI - connects each button to a function
         Note - button functions cannot have arguments which is why I had to wrap this all in a class. Ugh. 
@@ -155,7 +156,8 @@ class UI_obj:
         None.
 
         '''
-        self.btn_submit = tk.Button(master = self.window, text = "Submit", command=self.validateLogin)
+
+        self.btn_submit = tk.Button(master = self.window, text = "Submit",command= lambda: threading.Thread(target=self.performState).start())
         self.btn_help = tk.Button(master = self.window, text = "Help", command=self.open_popup)
         
         self.btn_manifest = tk.Button(master = self.window, text = "Manifest", command=self.stateM)
@@ -164,7 +166,9 @@ class UI_obj:
         
         self.btn_tarFile = tk.Button(master = self.window, text = "Search", command=self.select_file_target)
         self.btn_manFile = tk.Button(master = self.window, text = "Search", command=self.select_file_manifest)
-        
+
+        self.btn_printProgress = tk.Checkbutton(master = self.window, text="Print Progress", variable=self.printProgress, onvalue=1, offvalue=0)
+
     def select_file_manifest(self):
         filetypes = (
             ('CSV files', '*.csv'),
@@ -213,6 +217,7 @@ class UI_obj:
                 For : [manifest] : Only target filename and manifest filename field are required.\n \
                 : [upload]   : Only username, password, project ID, subject set ID, and manifest filename are requred\n \
                 : [full]     : All fields are required.').pack()
+
     def warning(self):
         '''
          Warning
@@ -277,7 +282,7 @@ class UI_obj:
 
     def validateLogin(self):
         '''
-        Validates form input and returns 
+        Validates form input and returns a boolean
 
         Returns
         -------
@@ -302,10 +307,21 @@ class UI_obj:
             self.acc_setID = int(self.setID)
             self.acc_targetFile = self.targetFile
             self.acc_manifestFile = self.manifestFile
-            
-            self.window.destroy()
-            
-            #self.printout()
+
+        return not isError
+
+    def performState(self):
+        if(self.validateLogin()):
+            if (self.acc_state == 'f'):
+                fullPipeline(self)
+            elif (self.acc_state == 'm'):
+                generateManifest(self)
+            elif (self.acc_state == 'u'):
+                publishToZooniverse(self)
+            # Calls interface to determine how the program should run.
+            else:
+                print("You broke the pipeline :(")
+
             
     def printout(self):
             print('user: '+self.acc_username)
@@ -331,10 +347,6 @@ class UI_obj:
         
         return frm, ent
 
-    
-
-
-    
 if __name__ == "__main__":
     ui=UI_obj()
     ui.printout()

@@ -12,7 +12,7 @@ import UI
 
 def fullPipeline(ui):
     """
-    Goes through the entire pipeline. Generates manifest, uploads to zooniverse
+    Goes through the entire pipeline. Generates manifest, uploads to Zooniverse.
 
     Returns
     -------
@@ -22,16 +22,16 @@ def fullPipeline(ui):
 
     user = ui.acc_username
     pwd = ui.acc_password
-    
+
     projectID = ui.acc_projectID
     subject_set_id = ui.acc_setID
-    
+
     target = ui.acc_targetFile
     manifest = ui.acc_manifestFile
-    
+
     login = Login.Login(user,pwd)
-    workingSpout = spout.Spout(projectID,login)
-    
+    workingSpout = spout.Spout(projectID,login,ui.printProgress.get())
+
     subject_set = workingSpout.get_subject_set(subject_set_id)
     workingSpout.upload_data_to_subject_set(subject_set,manifest,target)
 
@@ -51,7 +51,7 @@ def generateManifest(ui):
     target = ui.acc_targetFile
     manifest = ui.acc_manifestFile
    
-    workingSpout = spout.Spout(18929,login)
+    workingSpout = spout.Spout(18929,login,ui.printProgress.get())
     workingSpout.generate_manifest(manifest,target)
 
 
@@ -74,21 +74,12 @@ def publishToZooniverse(ui):
     manifest = ui.acc_manifestFile
     
     login= Login.Login(user,pwd)
-    workingSpout = spout.Spout(projectID,login)
+    workingSpout = spout.Spout(projectID,login,ui.printProgress.get())
     
     subject_set=workingSpout.get_subject_set(subject_set_id)
     workingSpout.publish_existing_manifest(subject_set,manifest)
     
     
 if __name__ == "__main__":
-    
     ui=UI.UI_obj()
-    if (ui.acc_state == 'f'):
-        fullPipeline(ui)
-    elif (ui.acc_state == 'm'):
-        generateManifest(ui)
-    elif (ui.acc_state == 'u'):
-        publishToZooniverse(ui)
-    #Calls interface to determine how the program should run.
-    else:
-        print("You broke the pipeline :(")
+

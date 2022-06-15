@@ -18,7 +18,7 @@ class InvalidManifestFileError(Exception):
         super(InvalidManifestFileError, self).__init__(f"The provided manifest filename is not a .csv or .fits file: {manifest_filename}")
 
 class Manifest:
-    def __init__(self, dataset, manifest_filename="manifest.csv", overwrite_automatically=None, use_master_header=False, delimiter=" "):
+    def __init__(self, dataset, manifest_filename="manifest.csv", overwrite_automatically=None, use_master_header=False, delimiter=" ", display_printouts = False):
         """
         Initializes a Manifest object, an object which uses a dataset to create a formatted manifest CSV file.
 
@@ -38,12 +38,14 @@ class Manifest:
                 they differ, it will raise an error. By default it is False.
             delimiter : str, optional
                 The string used to separate fields in the master_header.txt file. By default it is " ", a single space.
+            display_printouts : bool, optional
+                Used to determine whether to display progress information in the console.
 
         Notes
         -----
 
         """
-
+        
         self.header = Header(dataset.data_field_names,dataset.metadata_field_names)
         if (use_master_header):
             master_header = Header.create_header_from_text_file("master_header.txt", delimiter)
@@ -57,7 +59,7 @@ class Manifest:
             metadata = dataset_dict["metadata"]
             self.information_table.append([*metadata.values, *data.values])
 
-        self.createManifestFile(manifest_filename=manifest_filename, overwrite_automatically=overwrite_automatically)
+        self.createManifestFile(manifest_filename=manifest_filename, overwrite_automatically=overwrite_automatically, display_printouts=display_printouts)
 
     def __str__(self):
         """
@@ -76,7 +78,7 @@ class Manifest:
 
         return f"Header: {self.header} \n Information Table: {self.information_table}"
 
-    def createManifestFile(self, manifest_filename="manifest.csv", filetype=".csv", overwrite_automatically=None):
+    def createManifestFile(self, manifest_filename="manifest.csv", filetype=".csv", overwrite_automatically=None, display_printouts=False):
         """
         Creates the manifest file associated with this Manifest object.
 
@@ -92,6 +94,8 @@ class Manifest:
                 Allows for any existing manifest file to be overwritten with a new one automatically if made True. If
                 False, it will keep any existing manifest trying to be overridden. If None, it will prompt the user to
                 decide. By default, it is None.
+            display_printouts : bool, optional
+                Used to determine whether to display progress information in the console.
 
         Notes
         -----
@@ -128,21 +132,25 @@ class Manifest:
                 f = open(manifest_filename, 'w', newline='')
                 writer = csv.writer(f)
                 writer.writerow([*self.header.metadata_fields,*self.header.data_fields])
-                print('Header Created')
+                if(display_printouts):
+                    print("Header Created.")
                 for row in self.information_table:
                     writer.writerow(row)
                 f.close()
-                print('Manifest Generation Complete')
+                if(display_printouts):
+                    print("Manifest Generation Complete.")
             elif(".fits" in manifest_filename):
                 print("Currently no functionality for .fits files")
             else:
                 raise InvalidManifestFileError(manifest_filename)
         else:
-            print("Existing Manifest Preserved")
+            if (display_printouts):
+                print("Existing Manifest Preserved.")
+            
 
 
 class Defined_Manifest(Manifest):
-    def __init__(self, dataset, manifest_filename="manifest.csv", overwrite_automatically=None, delimiter=" "):
+    def __init__(self, dataset, manifest_filename="manifest.csv", overwrite_automatically=None, delimiter=" ", display_printouts = False):
         """
         Initializes a Defined_Manifest object, an object which uses a dataset to create a formatted manifest CSV file and
         must be compared against a master_header.txt file.
@@ -160,13 +168,15 @@ class Defined_Manifest(Manifest):
                 decide. By default, it is None.
             delimiter : str, optional
                 The string used to separate fields in the master_header.txt file. By default it is " ", a single space.
+            display_printouts : bool, optional
+                Used to determine whether to display progress information in the console.
 
         Notes
         -----
 
         """
 
-        super(Defined_Manifest, self).__init__(dataset, manifest_filename, overwrite_automatically, True, delimiter)
+        super(Defined_Manifest, self).__init__(dataset, manifest_filename, overwrite_automatically, True, delimiter, display_printouts)
 
 
 
