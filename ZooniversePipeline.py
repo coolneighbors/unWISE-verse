@@ -30,7 +30,7 @@ def fullPipeline(ui):
     manifest = ui.acc_manifestFile
 
     login = Login.Login(user,pwd)
-    workingSpout = spout.Spout(projectID,login,ui.printProgress.get())
+    workingSpout = spout.Spout(projectID,login,bool(ui.printProgress.get()))
 
     subject_set = workingSpout.get_subject_set(subject_set_id)
     workingSpout.upload_data_to_subject_set(subject_set,manifest,target)
@@ -51,7 +51,7 @@ def generateManifest(ui):
     target = ui.acc_targetFile
     manifest = ui.acc_manifestFile
    
-    workingSpout = spout.Spout(18929,login,ui.printProgress.get())
+    workingSpout = spout.Spout(18929,login,bool(ui.printProgress.get()))
     workingSpout.generate_manifest(manifest,target)
 
 
@@ -74,7 +74,7 @@ def publishToZooniverse(ui):
     manifest = ui.acc_manifestFile
     
     login= Login.Login(user,pwd)
-    workingSpout = spout.Spout(projectID,login,ui.printProgress.get())
+    workingSpout = spout.Spout(projectID,login,bool(ui.printProgress.get()))
     
     subject_set=workingSpout.get_subject_set(subject_set_id)
     workingSpout.publish_existing_manifest(subject_set,manifest)
