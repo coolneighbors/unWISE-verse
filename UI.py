@@ -104,7 +104,7 @@ class UI_obj:
         '''
         Lays out all of the widgets onto the window using the grid allign functionality. 
         
-        Window is 4x3 array. 
+        Window is 4x4 array. 
         
         -------------------------------------------------
         | username |  projID  | targetFile | tarSearch  |
@@ -205,7 +205,7 @@ class UI_obj:
         '''
        top= tk.Toplevel(self.window)
        top.title("Help")
-       tk.Label(top, text= 'How to use: Select pipeline mode using top row of buttons. \n \
+       tk.Label(top, text= 'How to use: Select pipeline mode using bottom row of buttons. \n \
                 * Generate a manifest / data without publishing - [manifest] \n \
                 * Upload an existing manifest and data to zooniverse -[upload] \n \
                 * Run the whole pipeline to generate a manifest / data from target list and upload to zooniverse -[full] \n \
@@ -308,17 +308,42 @@ class UI_obj:
             #self.printout()
             
     def printout(self):
-            print('user: '+self.acc_username)
-            print('pass: '+self.acc_password)
-            print('proj: '+self.acc_projectID)
-            print('set: '+self.acc_setID)
-            print('target: '+self.acc_targetFile)
-            print('manifest: '+self.acc_manifestFile)
-            print('state: '+self.acc_state)
+        '''
+        Prints out all fields for the UI to console
+
+        Returns
+        -------
+        None.
+
+        '''
+        print('user: '+self.acc_username)
+        print('pass: '+self.acc_password)
+        print('proj: '+self.acc_projectID)
+        print('set: '+self.acc_setID)
+        print('target: '+self.acc_targetFile)
+        print('manifest: '+self.acc_manifestFile)
+        print('state: '+self.acc_state)
 
 
 
     def makeEntryField(self,label,hide=False):
+        '''
+        Generates a new frame with label and text entry field. 
+
+        Parameters
+        ----------
+        label : TYPE
+            The title for the frame, displayed above the text entry.
+        hide : TYPE, optional
+            Shows * in the text entry (e.g. to hide a password). The default is False.
+
+        Returns
+        -------
+        frm : tkinter Frame object, contains Entry and Label widget
+        ent : tkinter Entry widget.
+            User entry field.
+
+        '''
         frm=tk.Frame(master=self.window)
         if hide == False:
             ent=tk.Entry(master=frm,width=10)
