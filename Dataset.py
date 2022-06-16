@@ -244,17 +244,24 @@ class CN_Dataset(Zooniverse_Dataset):
                     GRID = True
                 else:
                     GRID = False
-                    
+
+                # set WV parameters to RA and DEC
+                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
+                wise_view_link=wv.generate_wv_url(wise_view_parameters)
+
                 row_metadata = []
                 metadata_field_names = []
                 for key in row.keys():
                     metadata_field_names.append(key)
                 for key in row:
-                    row_metadata.append(row[key])
+                    #Add runtime metadata here rather than just scraping from the target list
+                    if(key == 'WV_LINK'):
+                        row_metadata.append(str(wise_view_link))
+                    else:
+                        row_metadata.append(row[key])
                 metadata_list.append(Metadata(metadata_field_names, row_metadata))
                 
-                # set WV parameters to RA and DEC
-                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
+                
 
                 # Save all images for parameter set, add grid if toggled for that image
                 flist = wv.png_set(wise_view_parameters, "pngs", scale_factor=SCALE, addGrid=GRID)
