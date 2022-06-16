@@ -4,13 +4,17 @@ Created on Mon Jun 13 10:14:59 2022
 
 @author: Noah Schapera
 """
+import io
+import logging
 import os
+import sys
 import threading
 import tkinter as tk
 from copy import copy
 from tkinter import ttk
 from tkinter import filedialog as fd
 from tkinter.messagebox import showinfo
+from tkinter.scrolledtext import ScrolledText
 from ZooniversePipeline import fullPipeline, generateManifest, publishToZooniverse
 import pickle
 
@@ -40,28 +44,16 @@ publish to zooniverse:
 class UserInterface:
     
     def __init__(self):
-        self.configWindow(4,4,'Data Pipeline')
+        self.configWindow(5,4,'Data Pipeline')
         self.varInit()
+        self.session = Session(self)
         self.frameInit()
         self.buttonInit()
         self.layoutInit()
-        self.session = Session(self)
+        self.center_window(self.window)
         self.window.protocol("WM_DELETE_WINDOW",self.quit)
         self.window.mainloop()
 
-
-    '''
-    STATE FUNCTIONS: 
-    
-    Called by buttons to modify program state. 
-    '''
-    def stateM(self):
-        self.state.set('m')
-    def stateU(self):
-        self.state.set('u')
-    def stateF(self):
-        self.state.set('f')
-        
     def quit(self):
         if(self.saveSession.get()):
             self.session.save(self)
@@ -71,6 +63,20 @@ class UserInterface:
 
         self.window.destroy()
 
+    def center_window(self,window):
+        window.update_idletasks()
+        # get screen width and height
+        screen_width = window.winfo_screenwidth()
+        screen_height = window.winfo_screenheight()
+
+        # calculate position x and y coordinates
+        x = (screen_width / 2) - (window.winfo_width() / 2)
+        y = (screen_height / 2) - (window.winfo_height() / 2)
+
+        window.geometry('%dx%d+%d+%d' % (window.winfo_width(), window.winfo_height(), x, y))
+
+    def setState(self, value):
+        self.state.set(value)
 
     def varInit(self):
         '''
@@ -83,7 +89,7 @@ class UserInterface:
         '''
 
         #TKinter Variables
-        self.state = tk.StringVar(value="")
+        self.state = tk.StringVar(value="f")
         self.username = tk.StringVar(value="")
         self.password = tk.StringVar(value="")
         self.projectID = tk.StringVar(value="")
@@ -116,23 +122,26 @@ class UserInterface:
         self.targetFile_frame,self.targetFile_entry=self.makeEntryField('Target List Filename',self.targetFile)
         #manifest entry
         self.manifestFile_frame,self.manifestFile_entry=self.makeEntryField('Manifest Filename',self.manifestFile)
+
+        self.console_scrolled_text = ScrolledText(master=self.window, height=30, width=90,font=("consolas", "8", "normal"),state=tk.DISABLED)
         
     def layoutInit(self):
         '''
         Lays out all of the widgets onto the window using the grid align functionality.
         
-        Window is 4x4 array. 
+        Window is 5x4 array.
         
         -------------------------------------------------
         | username |  projID  | targetFile | tarSearch  |
         -------------------------------------------------
         | password |  setID   |manifestFile| manSearch  |
         -------------------------------------------------
-        |   help   |  submit  |            |            |
+        |   help   |  submit  |            |  print out |
         -------------------------------------------------
-        | manifest |  upload  |    full    |            |
+        | manifest |  upload  |    full    |save session|
         -------------------------------------------------
-        
+        |  console |  console |  console   |   console  |
+        -------------------------------------------------
 
         Returns
         -------
@@ -161,6 +170,16 @@ class UserInterface:
 
         self.printProgress_check_button.grid(row=2, column=3, padx=10, pady=10)
         self.saveSession_check_button.grid(row=3, column=3, padx=10, pady=10)
+
+        if(self.printProgress.get()):
+            self.console_scrolled_text.grid(row=4, column=0, columnspan=4)
+
+    def toggleConsole(self):
+        if(self.printProgress.get()):
+            self.console_scrolled_text.grid(row=4, column=0, columnspan=4)
+        else:
+            self.console_scrolled_text.grid_forget()
+
         
     def buttonInit(self):
 
@@ -174,18 +193,19 @@ class UserInterface:
 
         '''
 
-        self.submit_button = tk.Button(master = self.window, text = "Submit",command= lambda: threading.Thread(target=self.performState).start())
-        self.help_button = tk.Button(master = self.window, text = "Help", command=self.open_help_popup)
-        
-        self.manifest_button = tk.Button(master = self.window, text = "Manifest", command=self.stateM)
-        self.upload_button = tk.Button(master = self.window, text = "Upload", command=self.stateU)
-        self.full_button = tk.Button(master = self.window, text = "Full", command=self.stateF)
-        
-        self.targetFile_button = tk.Button(master = self.window, text = "Search", command=self.select_file_target)
-        self.manifestFile_button = tk.Button(master = self.window, text = "Search", command=self.select_file_manifest)
+        self.submit_button = tk.Button(master=self.window, text="Submit",command= lambda: threading.Thread(target=self.performState).start())
+        self.help_button = tk.Button(master=self.window, text="Help", command=self.open_help_popup)
 
-        self.printProgress_check_button = tk.Checkbutton(master = self.window, text="Print Progress", variable=self.printProgress, onvalue=1, offvalue=0)
-        self.saveSession_check_button = tk.Checkbutton(master = self.window, text="Save Session", variable=self.saveSession, onvalue=1, offvalue=0)
+        self.manifest_button = tk.Radiobutton(master=self.window, text="Manifest", variable=self.state, value="m")
+        self.upload_button = tk.Radiobutton(master=self.window, text="Upload", variable=self.state, value="u")
+        self.full_button = tk.Radiobutton(master=self.window, text="Full", variable=self.state,value="f")
+
+        self.targetFile_button = tk.Button(master=self.window, text="Search", command=self.select_file_target)
+        self.manifestFile_button = tk.Button(master=self.window, text="Search", command=self.select_file_manifest)
+
+        self.printProgress_check_button = tk.Checkbutton(master=self.window, text="Print Progress", command=self.toggleConsole, variable=self.printProgress, onvalue=1, offvalue=0)
+        self.saveSession_check_button = tk.Checkbutton(master=self.window, text="Save Session", variable=self.saveSession, onvalue=1, offvalue=0)
+
 
     def select_file_manifest(self):
         filetypes = (
@@ -235,6 +255,9 @@ class UserInterface:
                 For : [manifest] : Only target filename and manifest filename field are required.\n \
                 : [upload]   : Only username, password, project ID, subject set ID, and manifest filename are requred\n \
                 : [full]     : All fields are required.').pack()
+       self.center_window(top)
+
+
 
     def open_overwrite_manifest_popup(self):
         '''
@@ -264,7 +287,7 @@ class UserInterface:
         noButton.grid(row=1, column=1, padx=5)
 
         frame.grid(row=1, column=2)
-
+        self.center_window(top)
         yesButton.wait_variable(self.overwriteManifest)
 
     def overwriteManifestButtonPressed(self, value, popup):
@@ -327,7 +350,7 @@ class UserInterface:
         self.window.title(title)
         self.window.rowconfigure(list(range(rows)),minsize=50,weight=1)
         self.window.columnconfigure(list(range(cols)), minsize=50, weight=1)
-        
+        self.window.rowconfigure(4, minsize=400, weight=1)
 
     def validateLogin(self):
         '''
@@ -355,6 +378,11 @@ class UserInterface:
             else:
                 print("You broke the pipeline :(")
 
+    def updateConsole(self, new_text):
+        self.console_scrolled_text.config(state=tk.NORMAL)
+        self.console_scrolled_text.insert(tk.END, f"{new_text}\n")
+        self.console_scrolled_text.see(tk.END)
+        self.console_scrolled_text.config(state=tk.DISABLED)
             
     def printout(self):
         '''
@@ -374,8 +402,6 @@ class UserInterface:
         print('state: '+self.state.get())
         print('print progress: ' + str(self.printProgress.get()))
         print('save session: ' + str(self.saveSession.get()))
-
-
 
     def makeEntryField(self,label_title, variable, hide=False):
         '''
@@ -398,13 +424,13 @@ class UserInterface:
         
         frame =tk.Frame(master=self.window)
         if(not hide):
-            entry=tk.Entry(master=frame,width=10,textvariable=variable)
+            entry=tk.Entry(master=frame, textvariable=variable)
         else:
-            entry=tk.Entry(master=frame,show='*',width=10,textvariable=variable)
-        label=tk.Label(master=frame,text=label_title)
+            entry=tk.Entry(master=frame, show='*', textvariable=variable)
+        label=tk.Label(master=frame, text=label_title)
         
-        label.grid(row=0,column=0,sticky='s')
-        entry.grid(row=1,column=0,sticky='n')
+        label.grid(row=0, column=0, sticky='s')
+        entry.grid(row=1, column=0, sticky='n')
         
         return frame, entry
 
@@ -457,6 +483,8 @@ class Session():
     def delete(self):
         if(self.savedSessionExists()):
             os.remove("saved_session.pickle")
+
+
 
 
 if __name__ == "__main__":

@@ -141,19 +141,28 @@ class Manifest:
                 writer = csv.writer(f)
                 writer.writerow([*self.header.metadata_fields,*self.header.data_fields])
                 if(display_printouts):
-                    print("Header created.")
+                    if(UI is None):
+                        print("Header created.")
+                    elif (isinstance(UI, UserInterface.UserInterface)):
+                        UI.updateConsole("Header created.")
                 for row in self.information_table:
                     writer.writerow(row)
                 f.close()
                 if(display_printouts):
-                    print("Manifest generation complete.")
+                    if(UI is None):
+                        print("Manifest generation complete.")
+                    elif (isinstance(UI, UserInterface.UserInterface)):
+                        UI.updateConsole("Manifest generation complete.")
             elif(".fits" in manifest_filename):
                 print("Currently no functionality for .fits files")
             else:
                 raise InvalidManifestFileError(manifest_filename)
         else:
             if (display_printouts):
-                print("Existing manifest preserved.")
+                if(UI is None):
+                    print("Existing manifest preserved.")
+                elif (isinstance(UI, UserInterface.UserInterface)):
+                    UI.updateConsole("Existing manifest preserved.")
             
 
 

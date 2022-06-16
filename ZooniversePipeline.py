@@ -5,7 +5,7 @@ Created on Wed Jun  8 12:02:10 2022
 @author: Noah Schapera
 """
 
-import spout
+import Spout
 import Login
 import UserInterface
 
@@ -30,10 +30,12 @@ def fullPipeline(ui):
     manifest = ui.manifestFile.get()
 
     login = Login.Login(username,pwd)
-    workingSpout = spout.Spout(projectID,login,ui.printProgress.get(),ui)
+    workingSpout = Spout.Spout(projectID, login, ui.printProgress.get(), ui)
 
     subject_set = workingSpout.get_subject_set(subjectSetID)
     workingSpout.upload_data_to_subject_set(subject_set,manifest,target)
+    if(workingSpout.display_printouts):
+        ui.updateConsole("---------------------------------")
 
 
 def generateManifest(ui):
@@ -51,9 +53,10 @@ def generateManifest(ui):
     target = ui.targetFile.get()
     manifest = ui.manifestFile.get()
    
-    workingSpout = spout.Spout(18929,login,ui.printProgress.get(),ui)
+    workingSpout = Spout.Spout(18929, login, ui.printProgress.get(), ui)
     workingSpout.generate_manifest(manifest,target)
-
+    if (workingSpout.display_printouts):
+        ui.updateConsole("---------------------------------")
 
 def publishToZooniverse(ui):
     """
@@ -74,11 +77,12 @@ def publishToZooniverse(ui):
     manifest = ui.manifestFile.get()
     
     login= Login.Login(username,pwd)
-    workingSpout = spout.Spout(projectID,login,ui.printProgress.get(),ui)
+    workingSpout = Spout.Spout(projectID, login, ui.printProgress.get(), ui)
     
     subject_set=workingSpout.get_subject_set(subjectSetID)
     workingSpout.publish_existing_manifest(subject_set,manifest)
-    
+    if (workingSpout.display_printouts):
+        ui.updateConsole("---------------------------------")
     
 if __name__ == "__main__":
     ui=UserInterface.UserInterface()
