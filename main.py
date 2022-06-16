@@ -1,4 +1,4 @@
-import UI
+import UserInterface
 
 if __name__ == "__main__":
-    ui=UI.UI_obj()
+    ui=UserInterface.UserInterface()

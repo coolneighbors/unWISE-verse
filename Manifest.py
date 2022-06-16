@@ -7,6 +7,7 @@ Created on Thursday, June 9th
 import csv
 import os
 from Header import Header
+import UserInterface
 
 # Errors
 class InvalidHeaderError(Exception):
@@ -18,7 +19,7 @@ class InvalidManifestFileError(Exception):
         super(InvalidManifestFileError, self).__init__(f"The provided manifest filename is not a .csv or .fits file: {manifest_filename}")
 
 class Manifest:
-    def __init__(self, dataset, manifest_filename="manifest.csv", overwrite_automatically=None, use_master_header=False, delimiter=" ", display_printouts = False):
+    def __init__(self, dataset, manifest_filename="manifest.csv", overwrite_automatically=None, use_master_header=False, delimiter=" ", display_printouts = False, UI = None):
         """
         Initializes a Manifest object, an object which uses a dataset to create a formatted manifest CSV file.
 
@@ -40,6 +41,8 @@ class Manifest:
                 The string used to separate fields in the master_header.txt file. By default it is " ", a single space.
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
+            UI : UI object, optional
+                User interface object to request information from the user if the user interface is being used
 
         Notes
         -----
@@ -58,8 +61,7 @@ class Manifest:
             data = dataset_dict["data"]
             metadata = dataset_dict["metadata"]
             self.information_table.append([*metadata.values, *data.values])
-
-        self.createManifestFile(manifest_filename=manifest_filename, overwrite_automatically=overwrite_automatically, display_printouts=display_printouts)
+        self.createManifestFile(manifest_filename=manifest_filename, overwrite_automatically=overwrite_automatically, display_printouts=display_printouts, UI=UI)
 
     def __str__(self):
         """
@@ -78,7 +80,7 @@ class Manifest:
 
         return f"Header: {self.header} \n Information Table: {self.information_table}"
 
-    def createManifestFile(self, manifest_filename="manifest.csv", filetype=".csv", overwrite_automatically=None, display_printouts=False):
+    def createManifestFile(self, manifest_filename="manifest.csv", filetype=".csv", overwrite_automatically=None, display_printouts=False, UI = None):
         """
         Creates the manifest file associated with this Manifest object.
 
@@ -96,6 +98,8 @@ class Manifest:
                 decide. By default, it is None.
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
+            UI : UI object, optional
+                User interface object to request information from the user if the user interface is being used
 
         Notes
         -----
@@ -107,19 +111,23 @@ class Manifest:
         overwrite_manifest = None
         if (overwrite_automatically is None):
             if (os.path.exists(manifest_filename)):
-                print("Manifest File: " + str(manifest_filename))
-                response = input("This manifest already exists. Would you like to overwrite this manifest? (y/n) ")
-                end_prompt = False
-                while (not end_prompt):
-                    if (response.lower() == "y"):
-                        end_prompt = True
-                        overwrite_manifest = True
-                        print(f"Warning: manifest file being overridden at: {manifest_filename}")
-                    elif (response.lower() == "n"):
-                        end_prompt = True
-                        overwrite_manifest = False
-                    else:
-                        response = input("Invalid response, please type a valid response (y/n): ")
+                if(UI is None):
+                    print("Manifest File: " + str(manifest_filename))
+                    response = input("This manifest already exists. Would you like to overwrite this manifest? (y/n) ")
+                    end_prompt = False
+                    while (not end_prompt):
+                        if (response.lower() == "y"):
+                            end_prompt = True
+                            overwrite_manifest = True
+                            print(f"Warning: manifest file being overridden at: {manifest_filename}")
+                        elif (response.lower() == "n"):
+                            end_prompt = True
+                            overwrite_manifest = False
+                        else:
+                            response = input("Invalid response, please type a valid response (y/n): ")
+                elif(isinstance(UI,UserInterface.UserInterface)):
+                    UI.open_overwrite_manifest_popup()
+                    overwrite_manifest = UI.overwriteManifest.get()
             else:
                 overwrite_manifest = True
         elif (overwrite_automatically):
@@ -150,7 +158,7 @@ class Manifest:
 
 
 class Defined_Manifest(Manifest):
-    def __init__(self, dataset, manifest_filename="manifest.csv", overwrite_automatically=None, delimiter=" ", display_printouts = False):
+    def __init__(self, dataset, manifest_filename="manifest.csv", overwrite_automatically=None, delimiter=" ", display_printouts = False, UI = None):
         """
         Initializes a Defined_Manifest object, an object which uses a dataset to create a formatted manifest CSV file and
         must be compared against a master_header.txt file.
@@ -170,13 +178,15 @@ class Defined_Manifest(Manifest):
                 The string used to separate fields in the master_header.txt file. By default it is " ", a single space.
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
+            UI : UI object, optional
+                User interface object to request information from the user if the user interface is being used
 
         Notes
         -----
 
         """
 
-        super(Defined_Manifest, self).__init__(dataset, manifest_filename, overwrite_automatically, True, delimiter, display_printouts)
+        super(Defined_Manifest, self).__init__(dataset, manifest_filename, overwrite_automatically, True, delimiter, display_printouts, UI)
 
 
 

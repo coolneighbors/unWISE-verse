@@ -7,7 +7,7 @@ Created on Wed Jun  8 12:02:10 2022
 
 import spout
 import Login
-import UI
+import UserInterface
 
 
 def fullPipeline(ui):
@@ -20,19 +20,19 @@ def fullPipeline(ui):
 
     """
 
-    user = ui.acc_username
-    pwd = ui.acc_password
+    username = ui.username.get()
+    pwd = ui.password.get()
 
-    projectID = int(ui.acc_projectID)
-    subject_set_id = int(ui.acc_setID)
+    projectID = int(ui.projectID.get())
+    subjectSetID = int(ui.subjectSetID.get())
 
-    target = ui.acc_targetFile
-    manifest = ui.acc_manifestFile
+    target = ui.targetFile.get()
+    manifest = ui.manifestFile.get()
 
-    login = Login.Login(user,pwd)
-    workingSpout = spout.Spout(projectID,login,bool(ui.printProgress.get()))
+    login = Login.Login(username,pwd)
+    workingSpout = spout.Spout(projectID,login,ui.printProgress.get(),ui)
 
-    subject_set = workingSpout.get_subject_set(subject_set_id)
+    subject_set = workingSpout.get_subject_set(subjectSetID)
     workingSpout.upload_data_to_subject_set(subject_set,manifest,target)
 
 
@@ -48,10 +48,10 @@ def generateManifest(ui):
     """
 
     login = Login.Login('BYWDummyAccount','NOIRLabBYW')
-    target = ui.acc_targetFile
-    manifest = ui.acc_manifestFile
+    target = ui.targetFile.get()
+    manifest = ui.manifestFile.get()
    
-    workingSpout = spout.Spout(18929,login,bool(ui.printProgress.get()))
+    workingSpout = spout.Spout(18929,login,ui.printProgress.get(),ui)
     workingSpout.generate_manifest(manifest,target)
 
 
@@ -65,21 +65,21 @@ def publishToZooniverse(ui):
 
     """
 
-    user = ui.acc_username
-    pwd = ui.acc_password
+    username = ui.username.get()
+    pwd = ui.password.get()
     
-    projectID = int(ui.acc_projectID)
-    subject_set_id = int(ui.acc_setID)
+    projectID = int(ui.projectID.get())
+    subjectSetID = int(ui.subjectSetID.get())
     
-    manifest = ui.acc_manifestFile
+    manifest = ui.manifestFile.get()
     
-    login= Login.Login(user,pwd)
-    workingSpout = spout.Spout(projectID,login,bool(ui.printProgress.get()))
+    login= Login.Login(username,pwd)
+    workingSpout = spout.Spout(projectID,login,ui.printProgress.get(),ui)
     
-    subject_set=workingSpout.get_subject_set(subject_set_id)
+    subject_set=workingSpout.get_subject_set(subjectSetID)
     workingSpout.publish_existing_manifest(subject_set,manifest)
     
     
 if __name__ == "__main__":
-    ui=UI.UI_obj()
+    ui=UserInterface.UserInterface()
 

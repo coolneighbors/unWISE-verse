@@ -27,7 +27,7 @@ class SubjectSetRetrievalError(Exception):
 
 class Spout:
 
-    def __init__(self, project_identifier, login, display_printouts = False):
+    def __init__(self, project_identifier, login, display_printouts = False, UI = None):
 
         """
         Initializes a Spout object, a data pipeline between local files and any accessible Zooniverse project.
@@ -44,6 +44,8 @@ class Spout:
                 a username and a password.
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
+            UI : UI object, optional
+                User interface object to request information from the user if the user interface is being used
 
         Notes
         -----
@@ -53,7 +55,7 @@ class Spout:
             A Zooniverse slug is of the form: "owner_username/project-name-with-dashes-for-spaces".
 
         """
-
+        self.UI = UI
         Panoptes.connect(username=login.username, password=login.password)
 
         if(isinstance(project_identifier,str)):
@@ -216,12 +218,9 @@ class Spout:
 
         dataset = CN_Dataset(dataset_filename,self.display_printouts)
         if(enable_strict_manifest):
-            self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts)
+            self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
         else:
-            self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts)
-
-        if(self.display_printouts):
-            print("Manifest created.")
+            self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
 
     def generate_subject_data_dicts(self,manifest_filename):
         """
