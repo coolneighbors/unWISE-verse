@@ -11,6 +11,7 @@ from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
 from Manifest import Manifest, Defined_Manifest
 from Dataset import Dataset, Zooniverse_Dataset, CN_Dataset
+import UserInterface
 
 # Errors
 class ProjectIdentificationError(Exception):
@@ -70,8 +71,12 @@ class Spout:
         self.display_printouts = display_printouts
 
         if(self.display_printouts):
-            print(f"Project ID: {self.linked_project.id}")
-            print(f"Project Slug: {self.linked_project.slug}")
+            if(self.UI is None):
+                print(f"Project ID: {self.linked_project.id}")
+                print(f"Project Slug: {self.linked_project.slug}")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                UI.updateConsole(f"Project ID: {self.linked_project.id}")
+                UI.updateConsole(f"Project Slug: {self.linked_project.slug}")
 
     def create_subject_set(self, display_name):
         """
@@ -173,7 +178,10 @@ class Spout:
                 subject_set.reload()
                 if(subject_set.raw["display_name"] == subject_set_identifier):
                     if(self.display_printouts):
-                        print("Subject set retrieved from Zooniverse.")
+                        if(self.UI is None):
+                            print("Subject set retrieved from Zooniverse.")
+                        elif (isinstance(self.UI, UserInterface.UserInterface)):
+                            self.UI.updateConsole("Subject set retrieved from Zooniverse.")
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
 
@@ -183,7 +191,10 @@ class Spout:
                 subject_set.reload()
                 if (int(subject_set.id) == subject_set_identifier):
                     if(self.display_printouts):
-                        print("Subject set retrieved from Zooniverse.")
+                        if (self.UI is None):
+                            print("Subject set retrieved from Zooniverse.")
+                        elif (isinstance(self.UI, UserInterface.UserInterface)):
+                            self.UI.updateConsole("Subject set retrieved from Zooniverse.")
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
         else:
@@ -216,7 +227,7 @@ class Spout:
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
 
-        dataset = CN_Dataset(dataset_filename,self.display_printouts)
+        dataset = CN_Dataset(dataset_filename,self.display_printouts, self.UI)
         if(enable_strict_manifest):
             self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
         else:
@@ -303,7 +314,10 @@ class Spout:
             subjects.append(subject)
 
         if(self.display_printouts):
-            print("Subjects generated.")
+            if(self.UI is None):
+                print("Subjects generated.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("Subjects generated.")
 
         return subjects
 
@@ -327,7 +341,10 @@ class Spout:
         subject_set.save()
 
         if(self.display_printouts):
-            print("Subject set filled.")
+            if(self.UI is None):
+                print("Subject set filled.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("Subject set filled.")
         
     def publish_existing_manifest(self,subject_set,manifest_filename):
         """
@@ -353,7 +370,10 @@ class Spout:
         self.fill_subject_set(subject_set, subjects)
 
         if(self.display_printouts):
-            print("The existing manifest subjects have been published to Zooniverse.")
+            if(self.UI is None):
+                print("The existing manifest subjects have been published to Zooniverse.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("The existing manifest subjects have been published to Zooniverse.")
 
     def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None, enable_strict_manifest = True):
         """
@@ -395,4 +415,7 @@ class Spout:
         self.manifest = None
 
         if(self.display_printouts):
-            print("Subjects uploaded to Zooniverse.")
+            if(self.UI is None):
+                print("Subjects uploaded to Zooniverse.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("Subjects uploaded to Zooniverse.")

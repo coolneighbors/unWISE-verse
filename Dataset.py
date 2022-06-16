@@ -7,6 +7,8 @@ Created on Thursday, June 9th
 import csv
 from copy import copy
 from flipbooks import wv
+
+import UserInterface
 from Data import Data, Metadata
 
 # Errors
@@ -111,7 +113,7 @@ class Dataset():
         return dataset_dict
 
 class Zooniverse_Dataset(Dataset):
-    def __init__(self, dataset_filename, display_printouts = False):
+    def __init__(self, dataset_filename, display_printouts = False, UI = None):
         """
         Initializes a Zooniverse_Dataset object (child Class of Dataset), a container which holds a list of Data objects and a list of Metadata
         objects. When accessing, per index a dictionary containing the corresponding Data object and Metadata object
@@ -123,6 +125,8 @@ class Zooniverse_Dataset(Dataset):
                 The full path filename of the dataset CSV file to be used for the Zooniverse_Dataset object.
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
+            UI : UI object, optional
+                User interface object to request information from the user if the user interface is being used
         Notes
         -----
             The container structure of the Zooniverse_Dataset object is equivalent to an ordered list of dictionaries, each of which each contain
@@ -170,21 +174,26 @@ class Zooniverse_Dataset(Dataset):
                 flist = wv.png_set(wise_view_parameters, "pngs")
 
                 if (display_printouts):
-                    print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
-
+                    if(UI is None):
+                        print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
+                    elif (isinstance(UI, UserInterface.UserInterface)):
+                        UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i+1))
                 data_list.append(Data(data_field_names, flist))
 
         if (display_printouts):
-            print("Dataset created.")
+            if (UI is None):
+                print("Dataset created.")
+            elif (isinstance(UI, UserInterface.UserInterface)):
+                UI.updateConsole("Dataset created.")
 
         super(Zooniverse_Dataset, self).__init__(data_list, metadata_list)
 
 
 class CN_Dataset(Zooniverse_Dataset):
-    def __init__(self, dataset_filename, display_printouts = False):
+    def __init__(self, dataset_filename, display_printouts = False, UI = None):
         """
         Initializes a CN_Dataset object (child Class of Zooniverse_Dataset), a container which holds a list of Data
         objects and a list of Metadata objects. When accessing, per index a dictionary containing the corresponding Data
@@ -197,6 +206,8 @@ class CN_Dataset(Zooniverse_Dataset):
                 The full path filename of the dataset CSV file to be used for the CN_Dataset object.
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
+            UI : UI object, optional
+                User interface object to request information from the user if the user interface is being used
         Notes
         -----
             The container structure of the CN_Dataset object is equivalent to an ordered list of dictionaries, each of which each contain
@@ -252,14 +263,20 @@ class CN_Dataset(Zooniverse_Dataset):
                 flist = wv.png_set(wise_view_parameters, "pngs", scale_factor=2, addGrid=GRID)
 
                 if (display_printouts):
-                    print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
-
+                    if (UI is None):
+                        print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
+                    elif (isinstance(UI, UserInterface.UserInterface)):
+                        UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i + 1))
                 data_list.append(Data(data_field_names, flist))
 
         if(display_printouts):
-            print("Dataset created.")
+            if (UI is None):
+                print("Dataset created.")
+            elif (isinstance(UI, UserInterface.UserInterface)):
+                UI.updateConsole("Dataset created.")
+
         super(Zooniverse_Dataset, self).__init__(data_list, metadata_list)
 
