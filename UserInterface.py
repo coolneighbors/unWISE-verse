@@ -96,11 +96,13 @@ class UserInterface:
         self.subjectSetID = tk.StringVar(value="")
         self.targetFile = tk.StringVar(value="")
         self.manifestFile = tk.StringVar(value="")
-        self.scaleFactor=tk.IntVar(value=1)
+        self.scaleFactor=tk.StringVar(value="1")
         self.printProgress = tk.BooleanVar(value=False)
         self.saveSession = tk.BooleanVar(value=False)
         self.overwriteManifest = tk.BooleanVar(value=False)
         self.addGrid=tk.BooleanVar(value=False)
+        
+        self.intScaleFactor=1
 
     def frameInit(self):
         '''
@@ -316,6 +318,14 @@ class UserInterface:
 
          '''
         warningFlag=0
+        
+        try:
+            self.intScaleFactor = int(self.scaleFactor.get())
+        except ValueError:
+            warningFlag=5
+        
+        
+                    
 
         if self.state.get() == '':
             warningFlag=1
@@ -329,6 +339,11 @@ class UserInterface:
         elif (self.state.get() == 'f') and ((self.username.get() == '' or self.password.get() == '' or self.projectID.get() == '' or self.subjectSetID.get() == '' or self.manifestFile.get() == '' or self.targetFile.get() == '')):
             warningFlag=4
             whatToSay='All fields need to be filled out!'
+        elif warningFlag==5:
+            whatToSay='Input an integer scaling factor!'
+        
+          
+        
         else:
             return False
 
@@ -459,6 +474,8 @@ class Session():
         self.manifestFile = copy(UI.manifestFile.get())
         self.printProgress = copy(UI.printProgress.get())
         self.saveSession = copy(UI.saveSession.get())
+        self.scaleFactor=copy(UI.saveSession.get())
+        self.addGrid=copy(UI.saveSession.get())
 
     def setUIVariables(self, UI):
         UI.state.set(copy(self.state))
@@ -470,6 +487,8 @@ class Session():
         UI.manifestFile.set(copy(self.manifestFile))
         UI.printProgress.set(copy(self.printProgress))
         UI.saveSession.set(copy(self.saveSession))
+        UI.scaleFactor.set(copy(self.scaleFactor))
+        UI.addGrid.set(copy(self.addGrid))
 
     def save(self,UI):
         self.saveUIVariables(UI)
