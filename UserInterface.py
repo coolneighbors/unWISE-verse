@@ -96,14 +96,13 @@ class UserInterface:
         self.subjectSetID = tk.StringVar(value="")
         self.targetFile = tk.StringVar(value="")
         self.manifestFile = tk.StringVar(value="")
-        self.scaleFactor=tk.StringVar(value="1")
+        self.scaleFactor = tk.StringVar(value="1")
         self.printProgress = tk.BooleanVar(value=False)
         self.saveSession = tk.BooleanVar(value=False)
         self.overwriteManifest = tk.BooleanVar(value=False)
-        self.addGrid=tk.BooleanVar(value=False)
-        
-        self.intScaleFactor=1
-        self.boolAddGrid=False
+        self.addGrid = tk.BooleanVar(value=False)
+
+        self.metadataTargetFile = tk.StringVar(value="metadata-target.csv")
 
     def frameInit(self):
         '''
@@ -321,8 +320,7 @@ class UserInterface:
         warningFlag=0
         
         try:
-            self.intScaleFactor = int(self.scaleFactor.get())
-            self.boolAddGrid=self.addGrid.get()
+            int(self.scaleFactor.get())
         except ValueError:
             warningFlag=5
         
@@ -396,6 +394,11 @@ class UserInterface:
 
     def performState(self):
         if(self.validateLogin()):
+            metadata_dict = {"!GRID" : int(self.addGrid.get()), "!SCALE" : self.scaleFactor.get(), "WV_LINK" : None}
+
+            # Creates metadata-target.csv
+            ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(),metadata_dict,self.metadataTargetFile.get())
+
             if (self.state.get() == 'f'):
                 ZooniversePipeline.fullPipeline(self)
             elif (self.state.get() == 'm'):

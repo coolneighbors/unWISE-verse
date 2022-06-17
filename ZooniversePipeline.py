@@ -39,14 +39,14 @@ def fullPipeline(UI):
     projectID = int(UI.projectID.get())
     subjectSetID = int(UI.subjectSetID.get())
 
-    target = UI.targetFile.get()
+    metadata_targets = UI.metadataTargetFile.get()
     manifest = UI.manifestFile.get()
 
     login = Login.Login(username,pwd)
     workingSpout = Spout.Spout(projectID, login, UI.printProgress.get(), UI)
 
     subject_set = workingSpout.get_subject_set(subjectSetID)
-    workingSpout.upload_data_to_subject_set(subject_set,manifest,target)
+    workingSpout.upload_data_to_subject_set(subject_set,manifest,metadata_targets)
     if(workingSpout.display_printouts):
         UI.updateConsole("---------------------------------")
 
@@ -63,11 +63,11 @@ def generateManifest(UI):
     """
 
     login = Login.Login('BYWDummyAccount','NOIRLabBYW')
-    target = UI.targetFile.get()
+    metadata_targets = UI.metadataTargetFile.get()
     manifest = UI.manifestFile.get()
    
     workingSpout = Spout.Spout(18929, login, UI.printProgress.get(), UI)
-    workingSpout.generate_manifest(manifest,target)
+    workingSpout.generate_manifest(manifest,metadata_targets)
     if (workingSpout.display_printouts):
         UI.updateConsole("---------------------------------")
 
