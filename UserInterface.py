@@ -103,6 +103,7 @@ class UserInterface:
         self.addGrid=tk.BooleanVar(value=False)
         
         self.intScaleFactor=1
+        self.boolAddGrid=False
 
     def frameInit(self):
         '''
@@ -321,6 +322,7 @@ class UserInterface:
         
         try:
             self.intScaleFactor = int(self.scaleFactor.get())
+            self.boolAddGrid=self.addGrid.get()
         except ValueError:
             warningFlag=5
         
