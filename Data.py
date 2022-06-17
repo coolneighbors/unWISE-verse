@@ -206,6 +206,12 @@ class Data:
 
         return f"Field Names: {self.field_names} , Values: {self.values}"
 
+    @classmethod
+    def createFromDictionary(cls,data_dict):
+        data_field_names = list(data_dict.keys())
+        data_values = list(data_dict.values())
+        return Data(data_field_names,data_values)
+
     def toDictionary(self):
         """
         Converts the Data object into a dictionary with the field names as keys and the values as the corresponding
@@ -612,3 +618,9 @@ class Metadata(Data):
             else:
                 field_names_with_private_symbol.append(self.field_names[i])
         return field_names_with_private_symbol
+
+    @classmethod
+    def createFromDictionary(cls, data_dict):
+        data_field_names = list(data_dict.keys())
+        data_values = list(data_dict.values())
+        return Metadata(data_field_names, data_values)

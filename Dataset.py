@@ -112,6 +112,22 @@ class Dataset():
         dataset_dict = {"data": data,"metadata": metadata}
         return dataset_dict
 
+    @classmethod
+    def generateDataset(cls,data_csv_filename, metadata_csv_filename):
+        data_list = []
+        with open(data_csv_filename, newline='') as data_file:
+            reader = csv.DictReader(data_file)
+            for row in reader:
+                data_list.append(Data.createFromDictionary(row))
+
+        metadata_list = []
+        with open(metadata_csv_filename, newline='') as metadata_file:
+            reader = csv.DictReader(metadata_file)
+            for row in reader:
+                metadata_list.append(Metadata.createFromDictionary(row))
+
+        return Dataset(data_list,metadata_list)
+
 class Zooniverse_Dataset(Dataset):
     def __init__(self, dataset_filename, display_printouts = False, UI = None):
         """
