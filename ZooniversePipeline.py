@@ -7,7 +7,6 @@ Created on Wed Jun  8 12:02:10 2022
 
 import Spout
 import Login
-import UserInterface
 
 
 def fullPipeline(ui):
@@ -83,7 +82,3 @@ def publishToZooniverse(ui):
     workingSpout.publish_existing_manifest(subject_set,manifest)
     if (workingSpout.display_printouts):
         ui.updateConsole("---------------------------------")
-    
-if __name__ == "__main__":
-    ui=UserInterface.UserInterface()
-

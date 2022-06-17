@@ -15,7 +15,7 @@ from tkinter import ttk
 from tkinter import filedialog as fd
 from tkinter.messagebox import showinfo
 from tkinter.scrolledtext import ScrolledText
-from ZooniversePipeline import fullPipeline, generateManifest, publishToZooniverse
+import ZooniversePipeline
 import pickle
 
 '''
@@ -369,11 +369,11 @@ class UserInterface:
     def performState(self):
         if(self.validateLogin()):
             if (self.state.get() == 'f'):
-                fullPipeline(self)
+                ZooniversePipeline.fullPipeline(self)
             elif (self.state.get() == 'm'):
-                generateManifest(self)
+                ZooniversePipeline.generateManifest(self)
             elif (self.state.get() == 'u'):
-                publishToZooniverse(self)
+                ZooniversePipeline.publishToZooniverse(self)
             # Calls interface to determine how the program should run.
             else:
                 print("You broke the pipeline :(")
@@ -483,11 +483,3 @@ class Session():
     def delete(self):
         if(self.savedSessionExists()):
             os.remove("saved_session.pickle")
-
-
-
-
-if __name__ == "__main__":
-    ui=UserInterface()
-    ui.printout()
-

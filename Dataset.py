@@ -8,7 +8,7 @@ import csv
 from copy import copy
 from flipbooks import wv
 
-import UserInterface
+
 from Data import Data, Metadata
 
 # Errors
@@ -113,7 +113,7 @@ class Dataset():
         return dataset_dict
 
 class Zooniverse_Dataset(Dataset):
-    def __init__(self, dataset_filename, display_printouts = False, UI = None):
+    def __init__(self, metadata_targets_filename, display_printouts = False, UI = None):
         """
         Initializes a Zooniverse_Dataset object (child Class of Dataset), a container which holds a list of Data objects and a list of Metadata
         objects. When accessing, per index a dictionary containing the corresponding Data object and Metadata object
@@ -121,7 +121,7 @@ class Zooniverse_Dataset(Dataset):
 
         Parameters
         ----------
-            dataset_filename : str
+            metadata_targets_filename : str
                 The full path filename of the dataset CSV file to be used for the Zooniverse_Dataset object.
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
@@ -147,12 +147,16 @@ class Zooniverse_Dataset(Dataset):
         # Currently is only able to use CSV files
 
         total_data_rows = 0
-        if (display_printouts):
-            with open(dataset_filename, newline='') as targetList:
-                total_data_rows = len(list(targetList)) - 1
+        with open(metadata_targets_filename, newline='') as metadata_targets_file:
+            total_data_rows = len(list(metadata_targets_file)) - 1
 
-        with open(dataset_filename, newline='') as targetList:
-            reader = csv.DictReader(targetList)
+        metadata_field_names = []
+        with open(metadata_targets_filename, newline='') as metadata_targets_file:
+            reader = csv.DictReader(metadata_targets_file)
+            metadata_field_names = reader.fieldnames
+
+        with open(metadata_targets_filename, newline='') as metadata_targets_file:
+            reader = csv.DictReader(metadata_targets_file)
             count = 0
             for row in reader:
                 count+=1
@@ -160,9 +164,7 @@ class Zooniverse_Dataset(Dataset):
                 DEC = row['DEC']
 
                 row_metadata = []
-                metadata_field_names = []
-                for key in row.keys():
-                    metadata_field_names.append(key)
+
                 for key in row:
                     row_metadata.append(row[key])
                 metadata_list.append(Metadata(metadata_field_names, row_metadata))
@@ -175,9 +177,9 @@ class Zooniverse_Dataset(Dataset):
 
                 if (display_printouts):
                     if(UI is None):
-                        print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
+                        print(f"Row {count} out of {total_data_rows} in {metadata_targets_filename} has been downloaded.")
                     elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
+                        UI.updateConsole(f"Row {count} out of {total_data_rows} in {metadata_targets_filename} has been downloaded.")
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i+1))
@@ -193,7 +195,7 @@ class Zooniverse_Dataset(Dataset):
 
 
 class CN_Dataset(Zooniverse_Dataset):
-    def __init__(self, dataset_filename, display_printouts = False, UI = None):
+    def __init__(self, metadata_targets_filename, display_printouts = False, UI = None):
         """
         Initializes a CN_Dataset object (child Class of Zooniverse_Dataset), a container which holds a list of Data
         objects and a list of Metadata objects. When accessing, per index a dictionary containing the corresponding Data
@@ -202,7 +204,7 @@ class CN_Dataset(Zooniverse_Dataset):
 
         Parameters
         ----------
-            dataset_filename : str
+            metadata_targets_filename : str
                 The full path filename of the dataset CSV file to be used for the CN_Dataset object.
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
@@ -230,12 +232,17 @@ class CN_Dataset(Zooniverse_Dataset):
         # Currently is only able to use CSV files
 
         total_data_rows = 0
-        if(display_printouts):
-            with open(dataset_filename, newline='') as targetList:
-                total_data_rows = len(list(targetList))-1
+        with open(metadata_targets_filename, newline='') as metadata_targets_file:
+            total_data_rows = len(list(metadata_targets_file)) - 1
 
-        with open(dataset_filename, newline='') as targetList:
-            reader = csv.DictReader(targetList)
+        metadata_field_names = []
+        with open(metadata_targets_filename, newline='') as metadata_targets_file:
+            reader = csv.DictReader(metadata_targets_file)
+            metadata_field_names = reader.fieldnames
+
+
+        with open(metadata_targets_filename, newline='') as metadata_targets_file:
+            reader = csv.DictReader(metadata_targets_file)
             count = 0
             for row in reader:
                 count+=1
@@ -261,9 +268,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 wise_view_link=wv.generate_wv_url(wise_view_parameters)
 
                 row_metadata = []
-                metadata_field_names = []
-                for key in row.keys():
-                    metadata_field_names.append(key)
+
                 for key in row:
                     #Add runtime metadata here rather than just scraping from the target list
                     if(key == 'WV_LINK'):
@@ -279,9 +284,9 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 if (display_printouts):
                     if (UI is None):
-                        print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
+                        print(f"Row {count} out of {total_data_rows} in {metadata_targets_filename} has been downloaded.")
                     elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
+                        UI.updateConsole(f"Row {count} out of {total_data_rows} in {metadata_targets_filename} has been downloaded.")
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i + 1))
@@ -295,3 +300,4 @@ class CN_Dataset(Zooniverse_Dataset):
 
         super(Zooniverse_Dataset, self).__init__(data_list, metadata_list)
 
+import UserInterface
