@@ -96,9 +96,11 @@ class UserInterface:
         self.subjectSetID = tk.StringVar(value="")
         self.targetFile = tk.StringVar(value="")
         self.manifestFile = tk.StringVar(value="")
+        self.scaleFactor=tk.IntVar(value=1)
         self.printProgress = tk.BooleanVar(value=False)
         self.saveSession = tk.BooleanVar(value=False)
         self.overwriteManifest = tk.BooleanVar(value=False)
+        self.addGrid=tk.BooleanVar(value=False)
 
     def frameInit(self):
         '''
@@ -122,26 +124,30 @@ class UserInterface:
         self.targetFile_frame,self.targetFile_entry=self.makeEntryField('Target List Filename',self.targetFile)
         #manifest entry
         self.manifestFile_frame,self.manifestFile_entry=self.makeEntryField('Manifest Filename',self.manifestFile)
-
+        
+        #scale factor entry
+        self.scaleFactor_frame,self.scaleFactor_entry=self.makeEntryField('Scale Factor (Default=1)',self.scaleFactor)
+        
+        #console printouts
         self.console_scrolled_text = ScrolledText(master=self.window, height=30, width=90,font=("consolas", "8", "normal"),state=tk.DISABLED)
         
     def layoutInit(self):
         '''
         Lays out all of the widgets onto the window using the grid align functionality.
         
-        Window is 5x4 array.
+        Window is 5x5 array.
         
-        -------------------------------------------------
-        | username |  projID  | targetFile | tarSearch  |
-        -------------------------------------------------
-        | password |  setID   |manifestFile| manSearch  |
-        -------------------------------------------------
-        |   help   |  submit  |            |  print out |
-        -------------------------------------------------
-        | manifest |  upload  |    full    |save session|
-        -------------------------------------------------
-        |  console |  console |  console   |   console  |
-        -------------------------------------------------
+        --------------------------------------------------------------
+        | username |  projID  | targetFile | tarSearch  |   submit   |
+        --------------------------------------------------------------
+        | password |  setID   |manifestFile| manSearch  |            |
+        --------------------------------------------------------------
+        |          |   help   |            |  print out |    SCALE   |
+        --------------------------------------------------------------
+        | manifest |  upload  |    full    |save session|    GRID    |
+        --------------------------------------------------------------
+        |  console |  console |  console   |   console  |   console  |
+        --------------------------------------------------------------
 
         Returns
         -------
@@ -158,8 +164,8 @@ class UserInterface:
         self.targetFile_frame.grid(row=0,column=2,padx=10,pady=10)
         self.manifestFile_frame.grid(row=1,column=2,padx=10,pady=10)
         
-        self.help_button.grid(row=2,column=0,padx=10,pady=10)
-        self.submit_button.grid(row=2,column=1,padx=10,pady=10)
+        self.help_button.grid(row=2,column=2,padx=10,pady=10)
+        self.submit_button.grid(row=0,column=4,padx=10,pady=10)
         
         self.manifest_button.grid(row=3,column=0,padx=10,pady=10)
         self.upload_button.grid(row=3,column=1,padx=10,pady=10)
@@ -170,13 +176,16 @@ class UserInterface:
 
         self.printProgress_check_button.grid(row=2, column=3, padx=10, pady=10)
         self.saveSession_check_button.grid(row=3, column=3, padx=10, pady=10)
+        
+        self.scaleFactor_frame.grid(row=2,column=4,padx=10,pady=10)
+        self.addGrid_check_button.grid(row=3,column=4,padx=10,pady=10)
 
         if(self.printProgress.get()):
-            self.console_scrolled_text.grid(row=4, column=0, columnspan=4)
+            self.console_scrolled_text.grid(row=4, column=0, columnspan=5)
 
     def toggleConsole(self):
         if(self.printProgress.get()):
-            self.console_scrolled_text.grid(row=4, column=0, columnspan=4)
+            self.console_scrolled_text.grid(row=4, column=0, columnspan=5)
         else:
             self.console_scrolled_text.grid_forget()
 
@@ -202,6 +211,8 @@ class UserInterface:
 
         self.targetFile_button = tk.Button(master=self.window, text="Search", command=self.select_file_target)
         self.manifestFile_button = tk.Button(master=self.window, text="Search", command=self.select_file_manifest)
+        
+        self.addGrid_check_button=tk.Checkbutton(master=self.window, text='Add Grid', variable=self.addGrid, onvalue=1, offvalue=0)
 
         self.printProgress_check_button = tk.Checkbutton(master=self.window, text="Print Progress", command=self.toggleConsole, variable=self.printProgress, onvalue=1, offvalue=0)
         self.saveSession_check_button = tk.Checkbutton(master=self.window, text="Save Session", variable=self.saveSession, onvalue=1, offvalue=0)
