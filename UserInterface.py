@@ -374,7 +374,7 @@ class UserInterface:
 
         '''
        top= tk.Toplevel(self.window)
-       self.center_window(top)
+
 
        top.title("Help")
        tk.Label(top, text= 'How to use: Select pipeline mode using bottom row of buttons. \n \
@@ -385,6 +385,7 @@ class UserInterface:
                 For : [manifest] : Only target filename and manifest filename field are required.\n \
                 : [upload]   : Only username, password, project ID, subject set ID, and manifest filename are requred\n \
                 : [full]     : All fields are required.').pack()
+
        self.center_window(top)
 
     def open_overwrite_manifest_popup(self):
@@ -503,7 +504,7 @@ class UserInterface:
             whatToSay='Target file and manifest file fields need values!'
         elif (self.state.get() == 'u') and ((self.username.get() == '' or self.password.get() == '' or self.projectID.get() == '' or self.subjectSetID.get() == '' or self.manifestFile.get() == '')):
             warningFlag=3
-            whatToSay='Username, password, projet ID, set ID, and manifest filename fields need values!'
+            whatToSay='Username, password, project ID, subject set ID, and manifest filename fields need values!'
         elif (self.state.get() == 'f') and ((self.username.get() == '' or self.password.get() == '' or self.projectID.get() == '' or self.subjectSetID.get() == '' or self.manifestFile.get() == '' or self.targetFile.get() == '')):
             warningFlag=4
             whatToSay='All fields need to be filled out!'
@@ -516,9 +517,10 @@ class UserInterface:
             return False
 
         if warningFlag!=0:
-            war= tk.Toplevel(self.window)
-            war.title("Warning!")
-            tk.Label(war,text=whatToSay).pack()
+            warning_window = tk.Toplevel(self.window)
+            warning_window.title("Warning!")
+            tk.Label(warning_window,text=whatToSay).pack()
+            self.center_window(warning_window)
             return True
 
     def verifyInputs(self):
