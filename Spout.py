@@ -233,6 +233,44 @@ class Spout:
         else:
             self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
 
+    @classmethod
+    def generate_manifest_file(cls, manifest_filename, dataset_filename, overwrite_automatically = None, enable_strict_manifest = True, display_printouts = False, UI = None):
+        """
+        Generates a manifest CSV file used to compile the information necessary to send over subjects to a subject set
+        associated with the linked project.
+
+        Parameters
+        ----------
+            manifest_filename : str
+                A full path filename of the manifest CSV to be overwritten or created.
+            dataset_filename : str
+                A full path filename of the dataset CSV to be accessed. Should at least contain RA and DEC values
+                in the form: RA, DEC.
+            overwrite_automatically : None or bool, optional
+                Allows for a default option for overwriting the manifest file. If None, it will ask the user for a
+                response and use that to decide whether or not to overwrite the existing manifest file. If set to true
+                or to false, it will use that to decide.
+            enable_strict_manifest: bool, optional
+                Allows for manifests to be required to follow the standard a master_manifest.txt file, otherwise it
+                will raise an error. This is to avoid any discrepancies in our uploading scheme, once it its finalized.
+                Defaulted to true.
+            display_printouts : bool, optional
+                Used to determine whether to display progress information in the console.
+            UI : UI object, optional
+                User interface object to request information from the user if the user interface is being used
+
+        Notes
+        -----
+            Just to prevent wasteful redundancy, I implemented a way to ask the user if they are supposed to overwrite
+            an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
+        """
+
+        dataset = CN_Dataset(dataset_filename, display_printouts, UI)
+        if (enable_strict_manifest):
+            Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=display_printouts, UI=UI)
+        else:
+            Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=display_printouts, UI=UI)
+
     def generate_subject_data_dicts(self,manifest_filename):
         """
         Generates a list of dictionaries containing the master manifest header elements as keys and the elements of

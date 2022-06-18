@@ -44,14 +44,18 @@ publish to zooniverse:
 class UserInterface:
     
     def __init__(self):
-        self.configWindow(5,4,'Data Pipeline')
+        self.window = tk.Tk()
+        self.window.protocol("WM_DELETE_WINDOW", self.quit)
+        self.default_window_size = "600x200"
+        self.window.resizable(True,True)
         self.varInit()
-        self.session = Session(self)
-        self.frameInit()
-        self.buttonInit()
-        self.layoutInit()
+
+        if(self.rememberMe.get()):
+            self.attemptLogin()
+        else:
+            self.openLoginWindow()
+
         self.center_window(self.window)
-        self.window.protocol("WM_DELETE_WINDOW",self.quit)
         self.window.mainloop()
 
     def quit(self):
@@ -63,6 +67,99 @@ class UserInterface:
 
         self.window.destroy()
 
+    def configure_login_window(self, window, title, rows, cols):
+        '''
+        Configures a window object which holds all of the frames and buttons. Can store rows*cols widgets
+
+        Parameters
+        ----------
+        rows : int
+            Number of rows in the window
+        cols : int
+            Number of columns in the window
+        title : string
+            Title of the window
+
+        Returns
+        -------
+        None.
+
+        '''
+        window.title(title)
+        window.rowconfigure(list(range(rows)),minsize=50,weight=1)
+        window.columnconfigure(list(range(cols)), minsize=50, weight=1)
+
+    def openLoginWindow(self):
+        self.configure_login_window(self.window, 'Data Pipeline: Login', 3, 1)
+
+        login_input_frame = tk.Frame(self.window)
+
+        login_label = tk.Label(self.window,text="ZPipe",font=("Arial", 75))
+        login_label.grid(row=0,column=0)
+
+        self.configure_frame(login_input_frame,1,2)
+
+        # username frame and entry
+        self.username_frame, self.username_entry = self.makeEntryField(login_input_frame, 'Zooniverse Username',self.username)
+        # password frame and entry
+        self.password_frame, self.password_entry = self.makeEntryField(login_input_frame, 'Zooniverse Password', self.password, hide=True)
+
+        self.username_frame.grid(row=0, column=0, padx=10)
+        self.password_frame.grid(row=0, column=1, padx=10)
+
+        login_input_frame.grid(row=1, column=0)
+
+        login_button_frame = tk.Frame(self.window,)
+        self.configure_frame(login_button_frame,1,2)
+
+        login_button = tk.Button(master=login_button_frame, text="Login", command=self.attemptLogin)
+        login_button.grid(row=0, column=0,padx=50)
+
+        remember_me_check_button = tk.Checkbutton(master=login_button_frame, text="Remember Me", variable=self.rememberMe, onvalue=1, offvalue=0)
+        remember_me_check_button.grid(row=0,column=1,padx=20)
+
+        login_button_frame.grid(row=2, column=0)
+
+    def attemptLogin(self):
+        if(ZooniversePipeline.verifyLogin(self)):
+            self.openMainWindow()
+        else:
+            self.open_invalid_login_popup()
+
+    def configure_main_window(self, window, title, rows, cols):
+        '''
+        Configures a window object which holds all of the frames and buttons. Can store rows*cols widgets
+
+        Parameters
+        ----------
+        rows : int
+            Number of rows in the window
+        cols : int
+            Number of columns in the window
+        title : string
+            Title of the window
+
+        Returns
+        -------
+        None.
+
+        '''
+        window.title(title)
+        window.geometry(self.default_window_size)
+        window.rowconfigure(list(range(rows)),minsize=50,weight=1)
+        window.columnconfigure(list(range(cols)), minsize=50, weight=1)
+        window.rowconfigure(4, minsize=400, weight=1)
+
+    def openMainWindow(self):
+        self.clear_window(self.window)
+        self.configure_main_window(self.window,"Data Pipeline",4,4)
+        self.center_window(self.window)
+        self.setupMainWindow()
+
+    def clear_window(self,window):
+        for widget in window.winfo_children():
+            widget.destroy()
+
     def center_window(self,window):
         window.update_idletasks()
         # get screen width and height
@@ -73,7 +170,28 @@ class UserInterface:
         x = (screen_width / 2) - (window.winfo_width() / 2)
         y = (screen_height / 2) - (window.winfo_height() / 2)
 
-        window.geometry('%dx%d+%d+%d' % (window.winfo_width(), window.winfo_height(), x, y))
+        window.geometry("+%d+%d" %(x,y))
+
+    def configure_frame(self, frame, rows, cols):
+        '''
+        Configures a frame object which holds all of the frames and buttons. Can store rows*cols widgets
+
+        Parameters
+        ----------
+        rows : int
+            Number of rows in the window
+        cols : int
+            Number of columns in the window
+        title : string
+            Title of the window
+
+        Returns
+        -------
+        None.
+
+        '''
+        frame.rowconfigure(list(range(rows)), weight=1)
+        frame.columnconfigure(list(range(cols)), weight=1)
 
     def setState(self, value):
         self.state.set(value)
@@ -98,11 +216,14 @@ class UserInterface:
         self.manifestFile = tk.StringVar(value="")
         self.scaleFactor = tk.StringVar(value="1")
         self.printProgress = tk.BooleanVar(value=False)
-        self.saveSession = tk.BooleanVar(value=False)
+        self.saveSession = tk.BooleanVar(value=True)
         self.overwriteManifest = tk.BooleanVar(value=False)
         self.addGrid = tk.BooleanVar(value=False)
+        self.rememberMe = tk.BooleanVar(value=False)
 
         self.metadataTargetFile = tk.StringVar(value="metadata-target.csv")
+
+        self.session = Session(self)
 
     def frameInit(self):
         '''
@@ -113,43 +234,39 @@ class UserInterface:
         None.
 
         '''
-        
-        # username entry
-        self.username_frame,self.username_entry=self.makeEntryField('Zooniverse Username',self.username)
-        #password entry
-        self.password_frame,self.password_entry=self.makeEntryField('Zooniverse Password',self.password,hide=True)
+
         #proj ID entry
-        self.projectID_frame,self.projectID_entry=self.makeEntryField('Project ID',self.projectID)
+        self.projectID_frame,self.projectID_entry=self.makeEntryField(self.window,'Project ID',self.projectID)
         #set ID entry
-        self.subjectSetID_frame,self.subjectSetID_entry=self.makeEntryField('Subject Set ID',self.subjectSetID)
+        self.subjectSetID_frame,self.subjectSetID_entry=self.makeEntryField(self.window,'Subject Set ID',self.subjectSetID)
         #targets entry
-        self.targetFile_frame,self.targetFile_entry=self.makeEntryField('Target List Filename',self.targetFile)
+        self.targetFile_frame,self.targetFile_entry=self.makeEntryField(self.window,'Target List Filename',self.targetFile)
         #manifest entry
-        self.manifestFile_frame,self.manifestFile_entry=self.makeEntryField('Manifest Filename',self.manifestFile)
-        
-        #scale factor entry
-        self.scaleFactor_frame,self.scaleFactor_entry=self.makeEntryField('Scale Factor (Default=1)',self.scaleFactor)
+        self.manifestFile_frame,self.manifestFile_entry=self.makeEntryField(self.window,'Manifest Filename',self.manifestFile)
         
         #console printouts
-        self.console_scrolled_text = ScrolledText(master=self.window, height=30, width=90,font=("consolas", "8", "normal"),state=tk.DISABLED)
+        self.console_scrolled_text_frame = tk.Frame(master=self.window)
+        self.console_scrolled_text = ScrolledText(master=self.console_scrolled_text_frame, height=30, width=90, font=("consolas", "8", "normal"),state=tk.DISABLED)
         
-    def layoutInit(self):
+    def setupMainWindow(self):
+        self.frameInit()
+        self.buttonInit()
         '''
         Lays out all of the widgets onto the window using the grid align functionality.
         
-        Window is 5x5 array.
+        Window is 4x4 array.
         
-        --------------------------------------------------------------
-        | username |  projID  | targetFile | tarSearch  |   submit   |
-        --------------------------------------------------------------
-        | password |  setID   |manifestFile| manSearch  |            |
-        --------------------------------------------------------------
-        |          |   help   |            |  print out |    SCALE   |
-        --------------------------------------------------------------
-        | manifest |  upload  |    full    |save session|    GRID    |
-        --------------------------------------------------------------
-        |  console |  console |  console   |   console  |   console  |
-        --------------------------------------------------------------
+        ----------------------------------------------------
+        | projectID | targetFile | tarSearch  |  print out |
+        ----------------------------------------------------
+        |   setID   |manifestFile| manSearch  |save session|
+        ----------------------------------------------------
+        |   help    |   submit   |            |            |
+        ----------------------------------------------------
+        | manifest  |   upload   |    full    |            |
+        ----------------------------------------------------
+        |  console  |  console   |  console   |   console  |
+        ----------------------------------------------------
 
         Returns
         -------
@@ -157,41 +274,29 @@ class UserInterface:
 
         '''
         
-        self.username_frame.grid(row=0,column=0,padx=10,pady=10)
-        self.password_frame.grid(row=1,column=0,padx=10,pady=10)
+        self.projectID_frame.grid(row=0, column=0, padx=10)
+        self.subjectSetID_frame.grid(row=1, column=0, padx=10)
         
-        self.projectID_frame.grid(row=0,column=1,padx=10,pady=10)
-        self.subjectSetID_frame.grid(row=1,column=1,padx=10,pady=10)
+        self.targetFile_frame.grid(row=0, column=1, padx=10)
+        self.manifestFile_frame.grid(row=1, column=1, padx=10)
         
-        self.targetFile_frame.grid(row=0,column=2,padx=10,pady=10)
-        self.manifestFile_frame.grid(row=1,column=2,padx=10,pady=10)
+        self.help_button.grid(row=2, column=0, padx=10)
+        self.submit_button.grid(row=2, column=1, padx=10)
         
-        self.help_button.grid(row=2,column=2,padx=10,pady=10)
-        self.submit_button.grid(row=0,column=4,padx=10,pady=10)
+        self.manifest_button.grid(row=3, column=0, padx=10)
+        self.upload_button.grid(row=3, column=1, padx=10)
+        self.full_button.grid(row=3, column=2, padx=10)
         
-        self.manifest_button.grid(row=3,column=0,padx=10,pady=10)
-        self.upload_button.grid(row=3,column=1,padx=10,pady=10)
-        self.full_button.grid(row=3,column=2,padx=10,pady=10)
-        
-        self.targetFile_button.grid(row=0,column=3,padx=10,pady=10)
-        self.manifestFile_button.grid(row=1,column=3,padx=10,pady=10)
+        self.targetFile_button.grid(row=0, column=2, padx=10)
+        self.manifestFile_button.grid(row=1, column=2, padx=10)
 
-        self.printProgress_check_button.grid(row=2, column=3, padx=10, pady=10)
-        self.saveSession_check_button.grid(row=3, column=3, padx=10, pady=10)
-        
-        self.scaleFactor_frame.grid(row=2,column=4,padx=10,pady=10)
-        self.addGrid_check_button.grid(row=3,column=4,padx=10,pady=10)
+        self.printProgress_check_button.grid(row=0, column=3, padx=10)
+        self.saveSession_check_button.grid(row=1, column=3, padx=10)
 
-        if(self.printProgress.get()):
-            self.console_scrolled_text.grid(row=4, column=0, columnspan=5)
+        self.metadata_button.grid(row=3, column=3, padx=10, pady=10)
 
-    def toggleConsole(self):
-        if(self.printProgress.get()):
-            self.console_scrolled_text.grid(row=4, column=0, columnspan=5)
-        else:
-            self.console_scrolled_text.grid_forget()
+        self.toggleConsole()
 
-        
     def buttonInit(self):
 
         '''
@@ -213,12 +318,22 @@ class UserInterface:
 
         self.targetFile_button = tk.Button(master=self.window, text="Search", command=self.select_file_target)
         self.manifestFile_button = tk.Button(master=self.window, text="Search", command=self.select_file_manifest)
-        
-        self.addGrid_check_button=tk.Checkbutton(master=self.window, text='Add Grid', variable=self.addGrid, onvalue=1, offvalue=0)
+
+        self.metadata_button = tk.Button(master=self.window, text="Metadata", command=self.open_metadata_popup)
 
         self.printProgress_check_button = tk.Checkbutton(master=self.window, text="Print Progress", command=self.toggleConsole, variable=self.printProgress, onvalue=1, offvalue=0)
         self.saveSession_check_button = tk.Checkbutton(master=self.window, text="Save Session", variable=self.saveSession, onvalue=1, offvalue=0)
 
+    def toggleConsole(self):
+        if (self.printProgress.get()):
+            self.window.geometry("600x625")
+            self.console_scrolled_text_frame.grid(row=4, column=0, columnspan=5)
+            self.console_scrolled_text.grid(row=0,column=0)
+        else:
+            self.console_scrolled_text_frame.destroy()
+            self.window.geometry(self.default_window_size)
+            self.console_scrolled_text_frame = tk.Frame(master=self.window)
+            self.console_scrolled_text = ScrolledText(master=self.console_scrolled_text_frame, height=30, width=90, font=("consolas", "8", "normal"), state=tk.DISABLED)
 
     def select_file_manifest(self):
         filetypes = (
@@ -259,6 +374,8 @@ class UserInterface:
 
         '''
        top= tk.Toplevel(self.window)
+       self.center_window(top)
+
        top.title("Help")
        tk.Label(top, text= 'How to use: Select pipeline mode using bottom row of buttons. \n \
                 * Generate a manifest / data without publishing - [manifest] \n \
@@ -270,11 +387,9 @@ class UserInterface:
                 : [full]     : All fields are required.').pack()
        self.center_window(top)
 
-
-
     def open_overwrite_manifest_popup(self):
         '''
-        Generates a help popup with instructions on how to use the program
+        Generates an overwrite manifest popup
 
         Returns
         -------
@@ -283,6 +398,8 @@ class UserInterface:
         '''
 
         top = tk.Toplevel(self.window)
+        self.center_window(top)
+
         top.rowconfigure(list(range(3)), minsize=20, weight=1)
         top.columnconfigure(list(range(6)), minsize=20, weight=1)
         top.grab_set()
@@ -300,8 +417,59 @@ class UserInterface:
         noButton.grid(row=1, column=1, padx=5)
 
         frame.grid(row=1, column=2)
-        self.center_window(top)
         yesButton.wait_variable(self.overwriteManifest)
+
+    def open_invalid_login_popup(self):
+        '''
+        Generates an invalid login popup
+
+        Returns
+        -------
+        None.
+
+        '''
+
+        top = tk.Toplevel(self.window)
+        top.geometry("100x50")
+        self.center_window(top)
+
+        top.rowconfigure(list(range(1)), minsize=20, weight=1)
+        top.columnconfigure(list(range(1)), minsize=20, weight=1)
+        top.grab_set()
+        top.title("Invalid Login")
+
+        label = tk.Label(master=top, text="Invalid login.")
+
+        label.grid(row=0, column=0)
+
+    def open_metadata_popup(self):
+        '''
+        Generates a metadata popup
+
+        Returns
+        -------
+        None.
+
+        '''
+
+        top = tk.Toplevel(self.window)
+        top.geometry("100x200")
+        self.center_window(top)
+        top.rowconfigure(list(range(4)), weight=1)
+        top.columnconfigure(list(range(1)), weight=1)
+        top.grab_set()
+        top.title("Metadata")
+        metadata_label = tk.Label(master=top, text="Metadata",font=("Arial", 18))
+        metadata_label.grid(row=0,column=0)
+
+        self.addGrid_check_button = tk.Checkbutton(master=top, text='Add Grid', variable=self.addGrid, onvalue=1, offvalue=0)
+        self.addGrid_check_button.grid(row=1, column=0)
+
+        # scale factor entry
+        self.scaleFactor_frame, self.scaleFactor_entry = self.makeEntryField(top, 'Scale Factor',self.scaleFactor)
+        self.scaleFactor_entry.config(width=15)
+        self.scaleFactor_frame.grid(row=2, column=0)
+
 
     def overwriteManifestButtonPressed(self, value, popup):
         self.overwriteManifest.set(value)
@@ -352,33 +520,8 @@ class UserInterface:
             war.title("Warning!")
             tk.Label(war,text=whatToSay).pack()
             return True
-            
-                                
-    def configWindow(self,rows,cols,title):
-        '''
-        Initializes a window object which holds all of the frames and buttons. Can store rows*cols widgets
 
-        Parameters
-        ----------
-        rows : int
-            Number of rows in the window
-        cols : int
-            Number of columns in the window
-        title : string
-            Title of the window
-
-        Returns
-        -------
-        None.
-
-        '''
-        self.window = tk.Tk()
-        self.window.title(title)
-        self.window.rowconfigure(list(range(rows)),minsize=50,weight=1)
-        self.window.columnconfigure(list(range(cols)), minsize=50, weight=1)
-        self.window.rowconfigure(4, minsize=400, weight=1)
-
-    def validateLogin(self):
+    def verifyInputs(self):
         '''
         Validates form input and returns a boolean
 
@@ -393,7 +536,7 @@ class UserInterface:
         return not isError
 
     def performState(self):
-        if(self.validateLogin()):
+        if(self.verifyInputs()):
             metadata_dict = {"!GRID" : int(self.addGrid.get()), "!SCALE" : self.scaleFactor.get(), "WV_LINK" : None}
 
             # Creates metadata-target.csv
@@ -434,7 +577,7 @@ class UserInterface:
         print('print progress: ' + str(self.printProgress.get()))
         print('save session: ' + str(self.saveSession.get()))
 
-    def makeEntryField(self,label_title, variable, hide=False):
+    def makeEntryField(self, window, label_title, variable, hide=False):
         '''
         Generates a new frame with label and text entry field. 
 
@@ -453,19 +596,21 @@ class UserInterface:
             User entry field.
         '''
         
-        frame =tk.Frame(master=self.window)
+        frame =tk.Frame(master=window)
+
         if(not hide):
             entry=tk.Entry(master=frame, textvariable=variable)
         else:
             entry=tk.Entry(master=frame, show='*', textvariable=variable)
         label=tk.Label(master=frame, text=label_title)
         
-        label.grid(row=0, column=0, sticky='s')
-        entry.grid(row=1, column=0, sticky='n')
+        label.grid(row=0, column=0)
+        entry.grid(row=1, column=0)
         
         return frame, entry
 
 class Session():
+
     def __init__(self, UI):
         self.reviveSession(UI)
 
@@ -479,8 +624,9 @@ class Session():
         self.manifestFile = copy(UI.manifestFile.get())
         self.printProgress = copy(UI.printProgress.get())
         self.saveSession = copy(UI.saveSession.get())
-        self.scaleFactor=copy(UI.saveSession.get())
-        self.addGrid=copy(UI.saveSession.get())
+        self.scaleFactor = copy(UI.scaleFactor.get())
+        self.addGrid = copy(UI.addGrid.get())
+        self.rememberMe = copy(UI.rememberMe.get())
 
     def setUIVariables(self, UI):
         UI.state.set(copy(self.state))
@@ -494,6 +640,7 @@ class Session():
         UI.saveSession.set(copy(self.saveSession))
         UI.scaleFactor.set(copy(self.scaleFactor))
         UI.addGrid.set(copy(self.addGrid))
+        UI.rememberMe.set(copy(self.rememberMe))
 
     def save(self,UI):
         self.saveUIVariables(UI)

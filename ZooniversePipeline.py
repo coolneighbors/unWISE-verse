@@ -6,6 +6,8 @@ Created on Wed Jun  8 12:02:10 2022
 """
 import csv
 
+from panoptes_client import Panoptes
+
 import Spout
 import Login
 
@@ -22,6 +24,18 @@ class NonUniqueFieldsError(Exception):
             super(NonUniqueFieldsError, self).__init__(f"The following field name is not unique: {duplicate_list[0]}")
         else:
             super(NonUniqueFieldsError, self).__init__(f"The following field names are not unique: {duplicate_list}")
+
+def verifyLogin(UI):
+    username = UI.username.get()
+    pwd = UI.password.get()
+    if(username == "" or pwd == ""):
+        return False
+    try:
+        Panoptes.connect(username=username, password=pwd)
+        return True
+    except:
+        return False
+
 
 def fullPipeline(UI):
     """
@@ -42,6 +56,9 @@ def fullPipeline(UI):
     metadata_targets = UI.metadataTargetFile.get()
     manifest = UI.manifestFile.get()
 
+    if (UI.printProgress.get()):
+        UI.updateConsole("Full Pipeline Upload: ")
+
     login = Login.Login(username,pwd)
     workingSpout = Spout.Spout(projectID, login, UI.printProgress.get(), UI)
 
@@ -49,7 +66,6 @@ def fullPipeline(UI):
     workingSpout.upload_data_to_subject_set(subject_set,manifest,metadata_targets)
     if(workingSpout.display_printouts):
         UI.updateConsole("---------------------------------")
-
 
 def generateManifest(UI):
     """
@@ -62,13 +78,12 @@ def generateManifest(UI):
 
     """
 
-    login = Login.Login('BYWDummyAccount','NOIRLabBYW')
     metadata_targets = UI.metadataTargetFile.get()
     manifest = UI.manifestFile.get()
-   
-    workingSpout = Spout.Spout(18929, login, UI.printProgress.get(), UI)
-    workingSpout.generate_manifest(manifest,metadata_targets)
-    if (workingSpout.display_printouts):
+    if (UI.printProgress.get()):
+        UI.updateConsole("Generate Manifest: ")
+    Spout.Spout.generate_manifest_file(manifest,metadata_targets, display_printouts=UI.printProgress.get(), UI=UI)
+    if (UI.printProgress.get()):
         UI.updateConsole("---------------------------------")
 
 def publishToZooniverse(UI):
@@ -88,7 +103,10 @@ def publishToZooniverse(UI):
     subjectSetID = int(UI.subjectSetID.get())
     
     manifest = UI.manifestFile.get()
-    
+
+    if (UI.printProgress.get()):
+        UI.updateConsole("Publish Existing Manifest: ")
+
     login= Login.Login(username,pwd)
     workingSpout = Spout.Spout(projectID, login, UI.printProgress.get(), UI)
     
