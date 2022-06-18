@@ -195,7 +195,7 @@ class Zooniverse_Dataset(Dataset):
                     if(UI is None):
                         print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
                     elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
+                        UI.updateConsole(f"Row {count} out of {total_data_rows} has been downloaded.")
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i+1))
@@ -302,7 +302,7 @@ class CN_Dataset(Zooniverse_Dataset):
                     if (UI is None):
                         print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
                     elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
+                        UI.updateConsole(f"Row {count} out of {total_data_rows} has been downloaded.")
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i + 1))
