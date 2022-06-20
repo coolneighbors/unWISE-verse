@@ -4,16 +4,11 @@ Created on Mon Jun 13 10:14:59 2022
 
 @author: Noah Schapera
 """
-import io
-import logging
 import os
-import sys
 import threading
 import tkinter as tk
 from copy import copy
-from tkinter import ttk
 from tkinter import filedialog as fd
-from tkinter.messagebox import showinfo
 from tkinter.scrolledtext import ScrolledText
 import ZooniversePipeline
 import pickle
@@ -263,7 +258,7 @@ class UserInterface:
         ----------------------------------------------------
         |   help    |   submit   |            |            |
         ----------------------------------------------------
-        | manifest  |   upload   |    full    |            |
+        | manifest  |   upload   |    full    |  metadata  |
         ----------------------------------------------------
         |  console  |  console   |  console   |   console  |
         ----------------------------------------------------
@@ -362,7 +357,6 @@ class UserInterface:
         
         self.targetFile_entry.delete(0,tk.END)
         self.targetFile_entry.insert(0,filename)
-        
 
     def open_help_popup(self):
        '''
@@ -538,11 +532,11 @@ class UserInterface:
         return not isError
 
     def performState(self):
-        if(self.verifyInputs()):
-            metadata_dict = {"!GRID" : int(self.addGrid.get()), "!SCALE" : self.scaleFactor.get(), "WV_LINK" : None}
+        if (self.verifyInputs()):
+            metadata_dict = {"!GRID": int(self.addGrid.get()), "!SCALE": self.scaleFactor.get(), "WV_LINK": None}
 
             # Creates metadata-target.csv
-            ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(),metadata_dict,self.metadataTargetFile.get())
+            ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
 
             if (self.state.get() == 'f'):
                 ZooniversePipeline.fullPipeline(self)
