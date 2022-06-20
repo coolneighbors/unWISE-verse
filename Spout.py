@@ -200,7 +200,7 @@ class Spout:
         else:
             raise SubjectSetIdentificationError(subject_set_identifier)
 
-    def generate_manifest(self, manifest_filename, dataset_filename, overwrite_automatically = None, enable_strict_manifest = True):
+    def generate_manifest(self, manifest_filename, dataset_filename, overwrite_automatically = None, enable_strict_manifest = False):
         """
         Generates a manifest CSV file used to compile the information necessary to send over subjects to a subject set
         associated with the linked project.
@@ -227,14 +227,14 @@ class Spout:
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
 
-        dataset = CN_Dataset(dataset_filename,self.display_printouts, self.UI)
+        dataset = CN_Dataset(dataset_filename,require_uniform_fields=False, display_printouts=self.display_printouts, UI=self.UI)
         if(enable_strict_manifest):
             self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
         else:
             self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
 
     @classmethod
-    def generate_manifest_file(cls, manifest_filename, dataset_filename, overwrite_automatically = None, enable_strict_manifest = True, display_printouts = False, UI = None):
+    def generate_manifest_file(cls, manifest_filename, dataset_filename, overwrite_automatically = None, enable_strict_manifest = False, display_printouts = False, UI = None):
         """
         Generates a manifest CSV file used to compile the information necessary to send over subjects to a subject set
         associated with the linked project.
@@ -265,11 +265,11 @@ class Spout:
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
 
-        dataset = CN_Dataset(dataset_filename, display_printouts, UI)
+        dataset = CN_Dataset(dataset_filename, require_uniform_fields=False, display_printouts=display_printouts, UI=UI)
         if (enable_strict_manifest):
-            Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=display_printouts, UI=UI)
+            Defined_Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
         else:
-            Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=display_printouts, UI=UI)
+            Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
 
     def generate_subject_data_dicts(self,manifest_filename):
         """
@@ -413,7 +413,7 @@ class Spout:
             elif (isinstance(self.UI, UserInterface.UserInterface)):
                 self.UI.updateConsole("The existing manifest subjects have been published to Zooniverse.")
 
-    def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None, enable_strict_manifest = True):
+    def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None, enable_strict_manifest = False):
         """
         Uploads data from a dataset CSV, generates a manifest CSV, generates subjects from the manifest CSV, and then
         fills the subject set associated with the linked project on Zooniverse.

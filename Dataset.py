@@ -21,7 +21,7 @@ class MismatchedDataAndMetadataError(Exception):
         super(MismatchedDataAndMetadataError, self).__init__(f"The number of data objects does not match the number of metadata objects: {len(data_list)} , {len(metadata_list)}")
 
 class Dataset():
-    def __init__(self, data_list, metadata_list):
+    def __init__(self, data_list, metadata_list = [], require_uniform_fields = True):
         """
         Initializes a Dataset object, a container which holds a list of Data objects and a list of Metadata objects.
         When accessing, per index a dictionary containing the corresponding Data object and Metadata
@@ -31,8 +31,10 @@ class Dataset():
         ----------
             data_list : List of Data objects
                 A list of Data objects.
-            metadata_list : List of Metadata objects
+            metadata_list : List of Metadata objects, optional
                 A list of Metadata objects.
+            require_uniform_fields : A boolean determining whether to require all data and metadata objects to have the
+            exact same field names
 
         Notes
         -----
@@ -42,19 +44,32 @@ class Dataset():
 
         self.data_list = copy(data_list)
         self.metadata_list = copy(metadata_list)
-        if(len(data_list) != len(metadata_list)):
-            raise MismatchedDataAndMetadataError(data_list,metadata_list)
 
-        for data in data_list:
-            for other_data in data_list:
-                if(not data.have_equal_fields(other_data)):
-                    raise NonUniformFieldsError(data, other_data)
+        if (len(self.metadata_list) == 0):
+            for data in self.data_list:
+                self.metadata_list.append(Metadata(["!no_metadata"], [""]))
+
+        if(len(self.data_list) != len(self.metadata_list)):
+            raise MismatchedDataAndMetadataError(self.data_list,self.metadata_list)
+
+        for data in self.data_list:
+            for other_data in self.data_list:
+                if(require_uniform_fields):
+                    if(not data.have_equal_fields(other_data)):
+                        raise NonUniformFieldsError(data, other_data)
+                else:
+                    if (not data.have_equal_fields(other_data)):
+                        data.resolve_missing_fields(other_data)
         self.data_field_names = self.data_list[0].field_names
 
-        for metadata in metadata_list:
-            for other_metadata in metadata_list:
-                if (not metadata.have_equal_fields(other_metadata)):
-                    raise NonUniformFieldsError(metadata,other_metadata)
+        for metadata in self.metadata_list:
+            for other_metadata in self.metadata_list:
+                if (require_uniform_fields):
+                    if (not metadata.have_equal_fields(other_metadata)):
+                        raise NonUniformFieldsError(metadata, other_metadata)
+                else:
+                    if (not metadata.have_equal_fields(other_metadata)):
+                        metadata.resolve_missing_fields(other_metadata)
         self.metadata_field_names = self.metadata_list[0].getAdjustedFieldNames()
 
     def __str__(self):
@@ -129,7 +144,7 @@ class Dataset():
         return Dataset(data_list,metadata_list)
 
 class Zooniverse_Dataset(Dataset):
-    def __init__(self, dataset_filename, display_printouts = False, UI = None):
+    def __init__(self, dataset_filename, require_uniform_fields = True, display_printouts = False, UI = None):
         """
         Initializes a Zooniverse_Dataset object (child Class of Dataset), a container which holds a list of Data objects and a list of Metadata
         objects. When accessing, per index a dictionary containing the corresponding Data object and Metadata object
@@ -139,6 +154,8 @@ class Zooniverse_Dataset(Dataset):
         ----------
             dataset_filename : str
                 The full path filename of the dataset CSV file to be used for the Zooniverse_Dataset object.
+            require_uniform_fields : A boolean determining whether to require all data and metadata objects to have the
+            exact same field names
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
             UI : UI object, optional
@@ -207,11 +224,11 @@ class Zooniverse_Dataset(Dataset):
             elif (isinstance(UI, UserInterface.UserInterface)):
                 UI.updateConsole("Dataset created.")
 
-        super(Zooniverse_Dataset, self).__init__(data_list, metadata_list)
+        super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
 
 
 class CN_Dataset(Zooniverse_Dataset):
-    def __init__(self, dataset_filename, display_printouts = False, UI = None):
+    def __init__(self, dataset_filename, require_uniform_fields = True, display_printouts = False, UI = None):
         """
         Initializes a CN_Dataset object (child Class of Zooniverse_Dataset), a container which holds a list of Data
         objects and a list of Metadata objects. When accessing, per index a dictionary containing the corresponding Data
@@ -222,6 +239,8 @@ class CN_Dataset(Zooniverse_Dataset):
         ----------
             dataset_filename : str
                 The full path filename of the dataset CSV file to be used for the CN_Dataset object.
+            require_uniform_fields : A boolean determining whether to require all data and metadata objects to have the
+            exact same field names
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
             UI : UI object, optional
@@ -255,7 +274,6 @@ class CN_Dataset(Zooniverse_Dataset):
         with open(dataset_filename, newline='') as dataset_file:
             reader = csv.DictReader(dataset_file)
             metadata_field_names = reader.fieldnames
-
 
         with open(dataset_filename, newline='') as dataset_file:
             reader = csv.DictReader(dataset_file)
@@ -314,6 +332,6 @@ class CN_Dataset(Zooniverse_Dataset):
             elif (isinstance(UI, UserInterface.UserInterface)):
                 UI.updateConsole("Dataset created.")
 
-        super(Zooniverse_Dataset, self).__init__(data_list, metadata_list)
+        super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
 
 import UserInterface

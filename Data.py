@@ -47,7 +47,13 @@ class PrivateMetadataFieldMismatchError(Exception):
 
 class InvalidFieldNameError(Exception):
     def __init__(self, field_name):
-        super(InvalidFieldNameError, self).__init__(f"The provided field name has a privatization character (\"!\") after the first privatization character: {field_name}")
+        super(InvalidFieldNameError, self).__init__(f"The provided field name has the privatization symbol (\"{privatization_symbol}\") after the first privatization symbol: {field_name}")
+
+class FieldNameIndexedIncorrectlyError(Exception):
+    def __init__(self, field_name):
+        super(FieldNameIndexedIncorrectlyError, self).__init__(f"The field name, {field_name} (or another field at this index), is not correctly indexed compared to the other Data or Metadata.")
+
+privatization_symbol = "!"
 
 class Data:
     def __init__(self,field_names = [],data_values = []):
@@ -128,6 +134,69 @@ class Data:
 
         if (isinstance(other, Data)):
             return (self.field_names == other.field_names)
+        else:
+            raise ImproperDataComparisonError(self, other)
+
+    def resolve_missing_fields(self, other):
+        """
+        Fixes the missing fields between these data objects
+
+        Parameters
+        ----------
+            other : Data object
+                A Data object to compare against
+
+        Notes
+        -----
+
+        """
+
+        if (isinstance(other, Data)):
+
+            first_bool_list = []
+            for i in range(len(self)):
+                self_field_name = self[i]["name"]
+                name_found = False
+                for j in range(len(other)):
+                    other_field_name = other[j]["name"]
+                    if (self_field_name == other_field_name and i == j):
+                        first_bool_list.append(True)
+                        name_found = True
+                if (not name_found):
+                    first_bool_list.append(False)
+
+            second_bool_list = []
+            for i in range(len(other)):
+                self_field_name = other[i]["name"]
+                name_found = False
+                for j in range(len(self)):
+                    other_field_name = self[j]["name"]
+                    if (self_field_name == other_field_name and i == j):
+                        second_bool_list.append(True)
+                        name_found = True
+                if (not name_found):
+                    second_bool_list.append(False)
+
+            first_mismatched_indices = [i for i, x in enumerate(first_bool_list) if not x]
+            first_mismatched_names = []
+            for index in first_mismatched_indices:
+                first_mismatched_names.append(self[index]["name"])
+
+            second_mismatched_indices = [i for i, x in enumerate(second_bool_list) if not x]
+            second_mismatched_names = []
+            for index in second_mismatched_indices:
+                second_mismatched_names.append(other[index]["name"])
+
+            for name in first_mismatched_names:
+                if(not name in other.field_names):
+                    other.addField(name,None)
+                else:
+                    raise FieldNameIndexedIncorrectlyError(name)
+            for name in second_mismatched_names:
+                if (not name in self.field_names):
+                    self.addField(name, None)
+                else:
+                    raise FieldNameIndexedIncorrectlyError(name)
         else:
             raise ImproperDataComparisonError(self, other)
 
@@ -298,14 +367,14 @@ class Metadata(Data):
             field_names : List of str
                 A list of strings representing the field names of different data fields in the Data object. All field
                 names must be unique strings, otherwise it will throw an error. Field names in the list which start with
-                "!" will be made private automatically.
+                the privatization symbol will be made private automatically.
             metadata_values : List of Any
                 A list of values representing the field values associated, in order, to the different field names in
                 the Metadata object. Must have the same length as field_names, otherwise it will throw an error.
 
         Notes
         -----
-            Field names given to a metadata object can be make private by placing a "!" at the start of the name or can
+            Field names given to a metadata object can be make private by placing the privatization symbol at the start of the name or can
             be made private after-the-fact via the setFieldAsPrivate function.
         """
 
@@ -314,10 +383,10 @@ class Metadata(Data):
         adjusted_field_names = copy(field_names)
         for i in range(len(field_names)):
             adjusted_field_name = adjusted_field_names[i]
-            if(adjusted_field_name[0] == "!"):
+            if(adjusted_field_name[0] == privatization_symbol):
                 adjusted_field_names[i] = adjusted_field_name[1:]
                 check_field_name = adjusted_field_name[1:]
-                if("!" in check_field_name):
+                if(privatization_symbol in check_field_name):
                     raise InvalidFieldNameError(adjusted_field_name)
                 self.private_fields[i] = True
 
@@ -443,7 +512,7 @@ class Metadata(Data):
 
         """
 
-        if (field_name[0] == "!" and (field_name[1:] in self.field_names)):
+        if (field_name[0] == privatization_symbol and (field_name[1:] in self.field_names)):
             index_of_field_name = self.field_names.index(field_name[1:])
             return self.private_fields[index_of_field_name]
         elif(field_name in self.field_names):
@@ -504,7 +573,7 @@ class Metadata(Data):
         elif (index >= 0 and index < len(self.field_names)):
             self.private_fields.insert(index, False)
 
-        if (field_name[0] == "!"):
+        if (field_name[0] == privatization_symbol):
             field_name = field_name[1:]
             make_private = True
 
@@ -528,7 +597,7 @@ class Metadata(Data):
 
         """
 
-        if(field_name[0] == "!" and (field_name[1:] in self.field_names)):
+        if(field_name[0] == privatization_symbol and (field_name[1:] in self.field_names)):
             index_of_field_name = self.field_names.index(field_name[1:])
             if(self.private_fields[index_of_field_name]):
                 field_name = field_name[1:]
@@ -588,7 +657,7 @@ class Metadata(Data):
         """
 
         if (isinstance(other, Metadata)):
-            if(self.private_fields != other.private_fields):
+            if(self.private_fields != other.private_fields and len(self.private_fields) == len(other.private_fields)):
                 raise PrivateMetadataFieldMismatchError(self, other)
             return (self.field_names == other.field_names and self.private_fields == other.private_fields)
         else:
@@ -596,14 +665,14 @@ class Metadata(Data):
 
     def getAdjustedFieldNames(self):
         """
-        Provides the field names of the current Metadata object with the privatization character ("!") in the first
+        Provides the field names of the current Metadata object with the privatization symbol in the first
         index of the name string if it is a private field.
 
 
         Returns
         -------
         field_names_with_private_symbol : List of str
-            A list of strings representing the field names but with a "!" at the front of the name if the field is
+            A list of strings representing the field names but with a privatization symbol at the front of the name if the field is
             private
 
         Notes
@@ -614,7 +683,7 @@ class Metadata(Data):
         field_names_with_private_symbol = []
         for i in range(len(self.field_names)):
             if (self.private_fields[i]):
-                field_names_with_private_symbol.append("!" + self.field_names[i])
+                field_names_with_private_symbol.append(privatization_symbol + self.field_names[i])
             else:
                 field_names_with_private_symbol.append(self.field_names[i])
         return field_names_with_private_symbol
