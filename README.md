@@ -12,7 +12,6 @@ FullPipeline allows a user to quickly download a large set of target data from t
 	* flipbooks
 	* Panoptes-Client
 	* Pillow
-	* getpass
 	* requests
 	* os
 	* shutil
@@ -23,14 +22,13 @@ FullPipeline allows a user to quickly download a large set of target data from t
 ```
 pip install panoptes-client
 		Pillow
-		getpass
 		requests
 		os
 		shutil
 		csv
 		python-magic-bin
 		git+https://github.com/coolneighbors/flipbooks.git
-		tkinter
+		tk
 
 ```
 * Clone into git repository at github.com/coolneighbors/ZPipe
@@ -55,7 +53,7 @@ ra_n,dec_n
 
 * Navigate to FullPipeline directory, and in cmd/powershell enter the command
 ```
-python ./main.py/
+python main.py
 ```
 
 Select desired program behavior using the bottom row of buttons.
@@ -130,6 +128,10 @@ For
 Distributed under the MIT License (see LICENSE.txt)
 
 ## Acknowledgments
+This pipeline is built on the WiseView platform
+
+Caselden D., Westin P. I, Meisner A., Kuchner M. and Colin G. 2018 WiseView: Visualizing Motion and Variability of Faint WISE Sources, Astrophysics Source Code Library ascl: 1806.004
+
 * [panoptes-python-client](https://github.com/zooniverse/panoptes-python-client)
 * [tkinter tutorial](https://realpython.com/python-gui-tkinter/)
 * [multiprocessing tutorial](https://tutorialedge.net/python/python-multiprocessing-tutorial/)
