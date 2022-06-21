@@ -45,24 +45,34 @@ git clone http://github.com/coolneighbors/FullPipeline
 	* The targets should be provided in a csv file as follows:
 	* Note all ra_n and dec_n should be numerical values (decimals allowed)
 ```
-RA,DEC,!GRID
-ra_1,dec_1,[1, 0, or empty]
-ra_2,dec_2,[1, 0, or empty] 
-ra_3,dec_3,[1, 0, or empty]
+RA,DEC
+ra_1,dec_1
+ra_2,dec_2
+ra_3,dec_3
 ...,...
-ra_n,dec_n,[1, 0, or empty]
+ra_n,dec_n
 ```
-
-The grid metadata allows the user to decide whether a grid will be overlayed onto the image downloaded from the unWISE catologue. 
-
 
 * Navigate to FullPipeline directory, and in cmd/powershell enter the command
 ```
-python ./ZooniversePipeline.py/
+python ./main.py/
 ```
+
+Select desired program behavior using the bottom row of buttons.
+
+Enter the required fields for zooniverse and or file information.
+
+If you would like to rescale the image, click the metadata button and input an integer scaling factor (default is 1)
+
+If you would like to add a grid to the image, click the metadata button and select "Grid"
+
+Select "Print progress" to view program progess. Do not change this selection after hitting submit and before program has completed. 
+
+When all selections have been made and fields are entered, hit "Submit"
+
 ## Notes
 
-FullPipeline uses a semi-modular metadata system. In order to add another line of metadata to the subject set, add a ![metadata] column to both the targets.csv and ![metadata] column to the second row of master_header.txt
+FullPipeline uses a semi-modular metadata system. In order to add another line of metadata to the subject set, add a ![metadata] column to the second row of master_header.txt
 Failure to do so will result in an error message.
 
 You can turn off cross-checking with a master_header.txt file by changing the enable_strict_manifest field in the generate_manifest function of spout.py to false. This is not recommended.
