@@ -33,9 +33,9 @@ pip install panoptes-client
 		tkinter
 
 ```
-* Clone into git repository at github.com/coolneighbors/FullPipeline
+* Clone into git repository at github.com/coolneighbors/ZPipe
 ```
-git clone http://github.com/coolneighbors/FullPipeline
+git clone http://github.com/coolneighbors/ZPipe
 ```
 
 ### Executing program
