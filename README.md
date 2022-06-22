@@ -17,6 +17,7 @@ FullPipeline allows a user to quickly download a large set of target data from t
 	* shutil
 	* csv
 	* tkinter
+	* datetime
 ### Installing
 * Dowload python packages as nescessary (recommended to use pip or similar)
 ```
@@ -29,6 +30,7 @@ pip install panoptes-client
 		python-magic-bin
 		git+https://github.com/coolneighbors/flipbooks.git
 		tk
+		DateTime
 
 ```
 * Clone into git repository at github.com/coolneighbors/ZPipe
