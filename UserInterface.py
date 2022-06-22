@@ -13,6 +13,7 @@ from tkinter.scrolledtext import ScrolledText
 import ZooniversePipeline
 import pickle
 import Data
+from datetime import datetime
 
 '''
 full pipeline:
@@ -545,6 +546,10 @@ class UserInterface:
 
     def performState(self):
         if (self.verifyInputs()):
+            if(self.printProgress.get()):
+                now = datetime.now()
+                self.updateConsole(f"Started pipeline at: {now}")
+            
             metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()), f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(), "FOV" : self.FOV.get()}
 
             # Creates metadata-target.csv
