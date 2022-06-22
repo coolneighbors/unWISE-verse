@@ -5,9 +5,10 @@ Created on Thursday, June 9th
 """
 
 import csv
+import math
 from copy import copy
 from flipbooks import wv
-
+import MetadataPointers
 
 from Data import Data, Metadata
 
@@ -270,26 +271,29 @@ class CN_Dataset(Zooniverse_Dataset):
         with open(dataset_filename, newline='') as dataset_file:
             total_data_rows = len(list(dataset_file)) - 1
 
-        metadata_field_names = []
-        with open(dataset_filename, newline='') as dataset_file:
-            reader = csv.DictReader(dataset_file)
-            metadata_field_names = reader.fieldnames
-
         with open(dataset_filename, newline='') as dataset_file:
             reader = csv.DictReader(dataset_file)
             count = 0
             for row in reader:
                 count+=1
+                # Get metadata-targets metadata
                 RA = float(row['RA'])
                 DEC = float(row['DEC'])
-                GRID = int(row['!GRID'])
-                SCALE = row['!SCALE']
-                
+                GRID = int(row[f'{Metadata.privatization_symbol}GRID'])
+                SCALE = row[f'{Metadata.privatization_symbol}SCALE']
+                FOV = float(row['FOV'])
+
+                # arc-seconds per pixel
+                unWISE_pixel_ratio = 2.75
+
+                # pixel side-length of the images
+                SIZE = int(FOV/unWISE_pixel_ratio)
+
+                # scale factor of modified images
                 if SCALE != '':
                     SCALE = int(SCALE)
                 else:
                     SCALE = 1
-                
 
                 # parse GRID into boolean values, only accept 1 as True, otherwise GRID is False.
                 if (GRID == 1):
@@ -298,20 +302,25 @@ class CN_Dataset(Zooniverse_Dataset):
                     GRID = False
 
                 # set WV parameters to RA and DEC
-                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
-                wise_view_link=wv.generate_wv_url(wise_view_parameters)
+                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC, size=SIZE)
 
-                row_metadata = []
+                # Set generated metadata
+                row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
+                row['Data Source'] = "http://unwise.me/"
+                row['unWISE Pixel Scale'] = f"~{unWISE_pixel_ratio} arcseconds per pixel"
+                row['WISEVIEW'] = wv.generate_wv_url(wise_view_parameters)
 
-                for key in row:
-                    #Add runtime metadata here rather than just scraping from the target list
-                    if(key == 'WV_LINK'):
-                        row_metadata.append(str(wise_view_link))
-                    else:
-                        row_metadata.append(row[key])
+                # Radius is the smallest circle radius which encloses the square image.
+                # This is done to ensure he entire image frame is searched.
+                radius = (math.sqrt(2)/2)*FOV
+                row['SIMBAD'] = MetadataPointers.generate_SIMBAD_url(RA, DEC, radius)
+
+                row['Legacy Surveys'] = MetadataPointers.generate_legacy_survey_url(RA, DEC)
+                row['VizieR'] = MetadataPointers.generate_VizieR_url(RA, DEC, FOV)
+                row['IRSA'] = MetadataPointers.generate_IRSA_url(RA, DEC)
+                row_metadata = list(row.values())
+                metadata_field_names = list(row.keys())
                 metadata_list.append(Metadata(metadata_field_names, row_metadata))
-                
-                
 
                 # Save all images for parameter set, add grid if toggled for that image
                 flist = wv.png_set(wise_view_parameters, "pngs", scale_factor=SCALE, addGrid=GRID)
