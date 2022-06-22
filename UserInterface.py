@@ -12,6 +12,7 @@ from tkinter import filedialog as fd
 from tkinter.scrolledtext import ScrolledText
 import ZooniversePipeline
 import pickle
+import Data
 
 '''
 full pipeline:
@@ -210,6 +211,7 @@ class UserInterface:
         self.targetFile = tk.StringVar(value="")
         self.manifestFile = tk.StringVar(value="")
         self.scaleFactor = tk.StringVar(value="1")
+        self.FOV = tk.StringVar(value="120")
         self.printProgress = tk.BooleanVar(value=False)
         self.saveSession = tk.BooleanVar(value=True)
         self.overwriteManifest = tk.BooleanVar(value=False)
@@ -457,6 +459,7 @@ class UserInterface:
         metadata_label = tk.Label(master=top, text="Metadata",font=("Arial", 18))
         metadata_label.grid(row=0,column=0)
 
+        # add grid checkbox
         self.addGrid_check_button = tk.Checkbutton(master=top, text='Add Grid', variable=self.addGrid, onvalue=1, offvalue=0)
         self.addGrid_check_button.grid(row=1, column=0)
 
@@ -464,6 +467,11 @@ class UserInterface:
         self.scaleFactor_frame, self.scaleFactor_entry = self.makeEntryField(top, 'Scale Factor',self.scaleFactor)
         self.scaleFactor_entry.config(width=15)
         self.scaleFactor_frame.grid(row=2, column=0)
+
+        # FOV entry
+        self.FOV_frame, self.FOV_entry = self.makeEntryField(top, 'FOV (arcseconds)', self.FOV)
+        self.FOV_entry.config(width=15)
+        self.FOV_frame.grid(row=3, column=0)
 
 
     def overwriteManifestButtonPressed(self, value, popup):
@@ -486,6 +494,11 @@ class UserInterface:
             int(self.scaleFactor.get())
         except ValueError:
             warningFlag=5
+
+        try:
+            float(self.FOV.get())
+        except:
+            warningFlag=6
         
         
                     
@@ -504,9 +517,8 @@ class UserInterface:
             whatToSay='All fields need to be filled out!'
         elif warningFlag==5:
             whatToSay='Input an integer scaling factor!'
-        
-          
-        
+        elif warningFlag==6:
+            whatToSay='Input a single numerical value for FOV'
         else:
             return False
 
@@ -533,7 +545,7 @@ class UserInterface:
 
     def performState(self):
         if (self.verifyInputs()):
-            metadata_dict = {"!GRID": int(self.addGrid.get()), "!SCALE": self.scaleFactor.get(), "WV_LINK": None}
+            metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()), f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(), "FOV" : self.FOV.get()}
 
             # Creates metadata-target.csv
             ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
@@ -623,6 +635,7 @@ class Session():
         self.scaleFactor = copy(UI.scaleFactor.get())
         self.addGrid = copy(UI.addGrid.get())
         self.rememberMe = copy(UI.rememberMe.get())
+        self.FOV = copy(UI.FOV.get())
 
     def setUIVariables(self, UI):
         UI.state.set(copy(self.state))
@@ -637,6 +650,7 @@ class Session():
         UI.scaleFactor.set(copy(self.scaleFactor))
         UI.addGrid.set(copy(self.addGrid))
         UI.rememberMe.set(copy(self.rememberMe))
+        UI.FOV.set(copy(self.FOV))
 
     def save(self,UI):
         self.saveUIVariables(UI)

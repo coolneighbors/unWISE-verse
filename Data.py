@@ -47,13 +47,11 @@ class PrivateMetadataFieldMismatchError(Exception):
 
 class InvalidFieldNameError(Exception):
     def __init__(self, field_name):
-        super(InvalidFieldNameError, self).__init__(f"The provided field name has the privatization symbol (\"{privatization_symbol}\") after the first privatization symbol: {field_name}")
+        super(InvalidFieldNameError, self).__init__(f"The provided field name has the privatization symbol (\"{Metadata.privatization_symbol}\") after the first privatization symbol: {field_name}")
 
 class FieldNameIndexedIncorrectlyError(Exception):
     def __init__(self, field_name):
         super(FieldNameIndexedIncorrectlyError, self).__init__(f"The field name, {field_name} (or another field at this index), is not correctly indexed compared to the other Data or Metadata.")
-
-privatization_symbol = "!"
 
 class Data:
     def __init__(self,field_names = [],data_values = []):
@@ -356,6 +354,8 @@ class Data:
 
 class Metadata(Data):
 
+    privatization_symbol = "#"
+
     def __init__(self, field_names = [], metadata_values = []):
         """
         Initializes a Metadata object, a child class of a Data object, an object which resembles a dictionary except
@@ -383,10 +383,10 @@ class Metadata(Data):
         adjusted_field_names = copy(field_names)
         for i in range(len(field_names)):
             adjusted_field_name = adjusted_field_names[i]
-            if(adjusted_field_name[0] == privatization_symbol):
+            if(adjusted_field_name[0] == Metadata.privatization_symbol):
                 adjusted_field_names[i] = adjusted_field_name[1:]
                 check_field_name = adjusted_field_name[1:]
-                if(privatization_symbol in check_field_name):
+                if(Metadata.privatization_symbol in check_field_name):
                     raise InvalidFieldNameError(adjusted_field_name)
                 self.private_fields[i] = True
 
@@ -512,7 +512,7 @@ class Metadata(Data):
 
         """
 
-        if (field_name[0] == privatization_symbol and (field_name[1:] in self.field_names)):
+        if (field_name[0] == Metadata.privatization_symbol and (field_name[1:] in self.field_names)):
             index_of_field_name = self.field_names.index(field_name[1:])
             return self.private_fields[index_of_field_name]
         elif(field_name in self.field_names):
@@ -573,7 +573,7 @@ class Metadata(Data):
         elif (index >= 0 and index < len(self.field_names)):
             self.private_fields.insert(index, False)
 
-        if (field_name[0] == privatization_symbol):
+        if (field_name[0] == Metadata.privatization_symbol):
             field_name = field_name[1:]
             make_private = True
 
@@ -597,7 +597,7 @@ class Metadata(Data):
 
         """
 
-        if(field_name[0] == privatization_symbol and (field_name[1:] in self.field_names)):
+        if(field_name[0] == Metadata.privatization_symbol and (field_name[1:] in self.field_names)):
             index_of_field_name = self.field_names.index(field_name[1:])
             if(self.private_fields[index_of_field_name]):
                 field_name = field_name[1:]
@@ -683,7 +683,7 @@ class Metadata(Data):
         field_names_with_private_symbol = []
         for i in range(len(self.field_names)):
             if (self.private_fields[i]):
-                field_names_with_private_symbol.append(privatization_symbol + self.field_names[i])
+                field_names_with_private_symbol.append(Metadata.privatization_symbol + self.field_names[i])
             else:
                 field_names_with_private_symbol.append(self.field_names[i])
         return field_names_with_private_symbol
