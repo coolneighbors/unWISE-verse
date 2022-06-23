@@ -196,6 +196,7 @@ class Zooniverse_Dataset(Dataset):
                 count+=1
                 RA = row['RA']
                 DEC = row['DEC']
+                PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
 
                 row_metadata = []
 
@@ -207,7 +208,7 @@ class Zooniverse_Dataset(Dataset):
                 wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(wise_view_parameters, "pngs")
+                flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY)
 
                 if (display_printouts):
                     if(UI is None):
@@ -279,6 +280,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 # Get metadata-targets metadata
                 RA = float(row['RA'])
                 DEC = float(row['DEC'])
+                PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
                 GRID = int(row[f'{Metadata.privatization_symbol}GRID'])
                 SCALE = row[f'{Metadata.privatization_symbol}SCALE']
                 FOV = float(row['FOV'])
@@ -323,7 +325,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 metadata_list.append(Metadata(metadata_field_names, row_metadata))
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(wise_view_parameters, "pngs", scale_factor=SCALE, addGrid=GRID)
+                flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY, scale_factor=SCALE, addGrid=GRID)
 
                 if (display_printouts):
                     if (UI is None):

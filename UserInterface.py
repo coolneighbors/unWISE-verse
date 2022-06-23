@@ -213,6 +213,8 @@ class UserInterface:
         self.manifestFile = tk.StringVar(value="")
         self.scaleFactor = tk.StringVar(value="1")
         self.FOV = tk.StringVar(value="120")
+        self.pngDirectory = tk.StringVar(value="pngs")
+
         self.printProgress = tk.BooleanVar(value=False)
         self.saveSession = tk.BooleanVar(value=True)
         self.overwriteManifest = tk.BooleanVar(value=False)
@@ -241,6 +243,9 @@ class UserInterface:
         self.targetFile_frame,self.targetFile_entry=self.makeEntryField(self.window,'Target List Filename',self.targetFile)
         #manifest entry
         self.manifestFile_frame,self.manifestFile_entry=self.makeEntryField(self.window,'Manifest Filename',self.manifestFile)
+        # png directory entry
+        self.pngDirectory_frame, self.pngDirectory_entry = self.makeEntryField(self.window, 'PNG Directory',self.pngDirectory)
+
         
         #console printouts
         self.console_scrolled_text_frame = tk.Frame(master=self.window)
@@ -277,9 +282,10 @@ class UserInterface:
         
         self.targetFile_frame.grid(row=0, column=1, padx=10)
         self.manifestFile_frame.grid(row=1, column=1, padx=10)
-        
+        self.pngDirectory_frame.grid(row=2, column=1, padx=10)
+
         self.help_button.grid(row=2, column=0, padx=10)
-        self.submit_button.grid(row=2, column=1, padx=10)
+        self.submit_button.grid(row=3, column=3, padx=10)
         
         self.manifest_button.grid(row=3, column=0, padx=10)
         self.upload_button.grid(row=3, column=1, padx=10)
@@ -287,11 +293,12 @@ class UserInterface:
         
         self.targetFile_button.grid(row=0, column=2, padx=10)
         self.manifestFile_button.grid(row=1, column=2, padx=10)
+        self.pngDirectory_button.grid(row=2, column=2, padx=10)
 
         self.printProgress_check_button.grid(row=0, column=3, padx=10)
         self.saveSession_check_button.grid(row=1, column=3, padx=10)
 
-        self.metadata_button.grid(row=3, column=3, padx=10, pady=10)
+        self.metadata_button.grid(row=2, column=3, padx=10, pady=10)
 
         self.toggleConsole()
 
@@ -316,6 +323,7 @@ class UserInterface:
 
         self.targetFile_button = tk.Button(master=self.window, text="Search", command=self.select_file_target)
         self.manifestFile_button = tk.Button(master=self.window, text="Search", command=self.select_file_manifest)
+        self.pngDirectory_button = tk.Button(master=self.window, text="Search", command=self.select_png_directory)
 
         self.metadata_button = tk.Button(master=self.window, text="Metadata", command=self.open_metadata_popup)
 
@@ -360,6 +368,14 @@ class UserInterface:
         
         self.targetFile_entry.delete(0,tk.END)
         self.targetFile_entry.insert(0,filename)
+
+    def select_png_directory(self):
+        filename = fd.askdirectory(
+            title='Open a directory',
+            initialdir='/')
+
+        self.pngDirectory_entry.delete(0, tk.END)
+        self.pngDirectory_entry.insert(0, filename)
 
     def open_help_popup(self):
        '''
@@ -500,7 +516,13 @@ class UserInterface:
             float(self.FOV.get())
         except:
             warningFlag=6
-        
+
+        if(not os.path.isdir(self.pngDirectory.get())):
+            try:
+                os.mkdir(self.pngDirectory.get())
+            except:
+                warningFlag=7
+
         
                     
 
@@ -519,7 +541,9 @@ class UserInterface:
         elif warningFlag==5:
             whatToSay='Input an integer scaling factor!'
         elif warningFlag==6:
-            whatToSay='Input a single numerical value for FOV'
+            whatToSay='Input a single numerical value for FOV!'
+        elif warningFlag==7:
+            whatToSay='Input a valid directory!'
         else:
             return False
 
@@ -550,7 +574,7 @@ class UserInterface:
                 now = datetime.now()
                 self.updateConsole(f"Started pipeline at: {now}")
             
-            metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()), f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(), "FOV" : self.FOV.get()}
+            metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()), f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(), "FOV" : self.FOV.get(), f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY" : self.pngDirectory.get()}
 
             # Creates metadata-target.csv
             ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
@@ -641,6 +665,7 @@ class Session():
         self.addGrid = copy(UI.addGrid.get())
         self.rememberMe = copy(UI.rememberMe.get())
         self.FOV = copy(UI.FOV.get())
+        self.pngDirectory = copy(UI.pngDirectory.get())
 
     def setUIVariables(self, UI):
         UI.state.set(copy(self.state))
@@ -656,6 +681,7 @@ class Session():
         UI.addGrid.set(copy(self.addGrid))
         UI.rememberMe.set(copy(self.rememberMe))
         UI.FOV.set(copy(self.FOV))
+        UI.pngDirectory.set(copy(self.pngDirectory))
 
     def save(self,UI):
         self.saveUIVariables(UI)
