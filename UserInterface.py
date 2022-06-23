@@ -371,7 +371,7 @@ class UserInterface:
 
     def select_png_directory(self):
         filename = fd.askdirectory(
-            title='Open a directory',
+            title='Select a directory',
             initialdir='/')
 
         self.pngDirectory_entry.delete(0, tk.END)
