@@ -284,6 +284,8 @@ class CN_Dataset(Zooniverse_Dataset):
                 GRID = int(row[f'{Metadata.privatization_symbol}GRID'])
                 SCALE = row[f'{Metadata.privatization_symbol}SCALE']
                 FOV = float(row['FOV'])
+                MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
+                MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
 
                 # arc-seconds per pixel
                 unWISE_pixel_ratio = 2.75
@@ -304,7 +306,7 @@ class CN_Dataset(Zooniverse_Dataset):
                     GRID = False
 
                 # set WV parameters to RA and DEC
-                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC, size=SIZE)
+                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT)
 
                 # Set generated metadata
                 row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
