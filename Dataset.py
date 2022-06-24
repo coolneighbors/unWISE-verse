@@ -7,6 +7,8 @@ Created on Thursday, June 9th
 import csv
 import math
 from copy import copy
+
+import PIL
 from flipbooks import wv
 import MetadataPointers
 
@@ -145,6 +147,7 @@ class Dataset():
         return Dataset(data_list,metadata_list)
 
 class Zooniverse_Dataset(Dataset):
+
     def __init__(self, dataset_filename, require_uniform_fields = True, display_printouts = False, UI = None):
         """
         Initializes a Zooniverse_Dataset object (child Class of Dataset), a container which holds a list of Data objects and a list of Metadata
@@ -160,7 +163,7 @@ class Zooniverse_Dataset(Dataset):
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
             UI : UI object, optional
-                User interface object to request information from the user if the user interface is being used
+                User interface object to send progress information to.
         Notes
         -----
             The container structure of the Zooniverse_Dataset object is equivalent to an ordered list of dictionaries, each of which each contain
@@ -173,10 +176,28 @@ class Zooniverse_Dataset(Dataset):
 
             Any additional metadata besides RA and DEC is optional.
 
+            Use Zooniverse_Dataset as the parent class of all other types of potential specific datasets associated with Zooniverse projects.
+            In order to add specific functionality with some predetermined set of metadata/data, override the generateDataAndMetadataLists function with your own functionality.
+            It should work as long as you properly return a list of Data objects and a list of Metadata objects.
+
         """
 
+        data_list, metadata_list = self.generateDataAndMetadataLists(dataset_filename, display_printouts, UI)
+
+        super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
+
+        if (display_printouts):
+            if (UI is None):
+                print("Dataset created.")
+            elif (isinstance(UI, UserInterface.UserInterface)):
+                UI.updateConsole("Dataset created.")
+
+    def generateDataAndMetadataLists(self, dataset_filename, display_printouts=False, UI=None):
         data_list = []
         metadata_list = []
+
+        ignored_data_list = []
+        ignored_metadata_list = []
 
         # Currently is only able to use CSV files
 
@@ -193,49 +214,73 @@ class Zooniverse_Dataset(Dataset):
             reader = csv.DictReader(dataset_file)
             count = 0
             for row in reader:
-                count+=1
+                count += 1
                 RA = row['RA']
                 DEC = row['DEC']
-                PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
 
-                row_metadata = []
-
-                for key in row:
-                    row_metadata.append(row[key])
-                metadata_list.append(Metadata(metadata_field_names, row_metadata))
+                row_metadata = list(row.values())
+                metadata_field_names = list(row.keys())
 
                 # set WV parameters to RA and DEC
                 wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY)
+                flist = wv.png_set(wise_view_parameters, "pngs")
+
+                is_partial_cutout = False
+                for filename in flist:
+                    image = PIL.Image.open(filename)
+                    width, height = image.size
+                    if (width != height):
+                        is_partial_cutout = True
+                        break
 
                 if (display_printouts):
-                    if(UI is None):
-                        print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
-                    elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Row {count} out of {total_data_rows} has been downloaded.")
+                    if (is_partial_cutout):
+                        if (UI is None):
+                            print(
+                                f"Row {count} out of {total_data_rows} in {dataset_filename} is a partial cutout and has not been processed.")
+                        elif (isinstance(UI, UserInterface.UserInterface)):
+                            UI.updateConsole(
+                                f"Row {count} out of {total_data_rows} in {dataset_filename} is a partial cutout and has not been processed.")
+                    else:
+                        if (UI is None):
+                            print(f"Row {count} out of {total_data_rows} has been downloaded.")
+                        elif (isinstance(UI, UserInterface.UserInterface)):
+                            UI.updateConsole(f"Row {count} out of {total_data_rows} has been downloaded.")
+
                 data_field_names = []
                 for i in range(len(flist)):
-                    data_field_names.append("f" + str(i+1))
-                data_list.append(Data(data_field_names, flist))
+                    data_field_names.append("f" + str(i + 1))
 
-        if (display_printouts):
-            if (UI is None):
-                print("Dataset created.")
-            elif (isinstance(UI, UserInterface.UserInterface)):
-                UI.updateConsole("Dataset created.")
+                if (not is_partial_cutout):
+                    data_list.append(Data(data_field_names, flist))
+                    metadata_list.append(Metadata(metadata_field_names, row_metadata))
+                else:
+                    ignored_data_list.append(Data(data_field_names, flist))
+                    ignored_metadata_list.append(Metadata(metadata_field_names, row_metadata))
 
-        super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
+        if (len(ignored_data_list) != 0):
+            self.generateIgnoredTargetsCSV(ignored_data_list, ignored_metadata_list)
 
+        return data_list, metadata_list
+
+    def generateIgnoredTargetsCSV(self, ignored_data_list, ignored_metadata_list):
+        temp_dataset = Dataset(ignored_data_list,ignored_metadata_list)
+        with open("ignored-targets.csv", "w", newline='') as ignored_targets_file:
+            writer = csv.DictWriter(ignored_targets_file, [*temp_dataset.metadata_field_names,*temp_dataset.data_field_names])
+            writer.writeheader()
+            for dataset_dict in temp_dataset:
+                writer.writerow(dataset_dict["metadata"].toDictionary() | dataset_dict["data"].toDictionary())
 
 class CN_Dataset(Zooniverse_Dataset):
+
     def __init__(self, dataset_filename, require_uniform_fields = True, display_printouts = False, UI = None):
         """
         Initializes a CN_Dataset object (child Class of Zooniverse_Dataset), a container which holds a list of Data
         objects and a list of Metadata objects. When accessing, per index a dictionary containing the corresponding Data
         object and Metadata object will be given. Generated through an existing dataset file which contains at least
-        Metadata values for RA, DEC, and !GRID.
+        Metadata values for RA, DEC, #PNG_DIRECTORY, #GRID, #SCALE, FOV, #MINBRIGHT, and #MAXBRIGHT.
 
         Parameters
         ----------
@@ -246,7 +291,7 @@ class CN_Dataset(Zooniverse_Dataset):
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
             UI : UI object, optional
-                User interface object to request information from the user if the user interface is being used
+                User interface object to send progress information to.
         Notes
         -----
             The container structure of the CN_Dataset object is equivalent to an ordered list of dictionaries, each of which each contain
@@ -254,17 +299,23 @@ class CN_Dataset(Zooniverse_Dataset):
 
             The dataset CSV should be of the following form:
 
-            RA,DEC,!GRID,...
+            RA,DEC,#PNG_DIRECTORY,...
             x,y,z,...
 
-            Any additional metadata besides RA, DEC, and !GRID is optional.
+            Any additional metadata besides RA, DEC, #PNG_DIRECTORY, #GRID, #SCALE, FOV, #MINBRIGHT, and #MAXBRIGHT is optional.
 
             The number of required pieces of metadata will most likely change throughout development, so make sure to
             keep updating this documentation regularly.
         """
 
+        super(CN_Dataset, self).__init__(dataset_filename, require_uniform_fields, display_printouts, UI)
+
+    def generateDataAndMetadataLists(self, dataset_filename, display_printouts=False, UI=None):
         data_list = []
         metadata_list = []
+
+        ignored_data_list = []
+        ignored_metadata_list = []
 
         # Currently is only able to use CSV files
 
@@ -276,8 +327,8 @@ class CN_Dataset(Zooniverse_Dataset):
             reader = csv.DictReader(dataset_file)
             count = 0
             for row in reader:
-                count+=1
-                # Get metadata-targets metadata
+                count += 1
+                # Get metadata
                 RA = float(row['RA'])
                 DEC = float(row['DEC'])
                 PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
@@ -289,7 +340,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 unWISE_pixel_ratio = 2.75
 
                 # pixel side-length of the images
-                SIZE = int(FOV/unWISE_pixel_ratio)
+                SIZE = int(FOV / unWISE_pixel_ratio)
 
                 # scale factor of modified images
                 if SCALE != '':
@@ -314,7 +365,7 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 # Radius is the smallest circle radius which encloses the square image.
                 # This is done to ensure he entire image frame is searched.
-                radius = (math.sqrt(2)/2)*FOV
+                radius = (math.sqrt(2) / 2) * FOV
                 row['SIMBAD'] = MetadataPointers.generate_SIMBAD_url(RA, DEC, radius)
 
                 row['Legacy Surveys'] = MetadataPointers.generate_legacy_survey_url(RA, DEC)
@@ -322,27 +373,44 @@ class CN_Dataset(Zooniverse_Dataset):
                 row['IRSA'] = MetadataPointers.generate_IRSA_url(RA, DEC)
                 row_metadata = list(row.values())
                 metadata_field_names = list(row.keys())
-                metadata_list.append(Metadata(metadata_field_names, row_metadata))
 
                 # Save all images for parameter set, add grid if toggled for that image
                 flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY, scale_factor=SCALE, addGrid=GRID)
 
+                is_partial_cutout = False
+                for filename in flist:
+                    image = PIL.Image.open(filename)
+                    width, height = image.size
+                    if (width != height):
+                        is_partial_cutout = True
+                        break
+
                 if (display_printouts):
-                    if (UI is None):
-                        print(f"Row {count} out of {total_data_rows} in {dataset_filename} has been downloaded.")
-                    elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Row {count} out of {total_data_rows} has been downloaded.")
+                    if (is_partial_cutout):
+                        if (UI is None):
+                            print(f"Row {count} out of {total_data_rows} in {dataset_filename} is a partial cutout and has not been downloaded.")
+                        elif (isinstance(UI, UserInterface.UserInterface)):
+                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} is a partial cutout and has not been downloaded.")
+                    else:
+                        if (UI is None):
+                            print(f"Row {count} out of {total_data_rows} has been downloaded.")
+                        elif (isinstance(UI, UserInterface.UserInterface)):
+                            UI.updateConsole(f"Row {count} out of {total_data_rows} has been downloaded.")
+
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i + 1))
-                data_list.append(Data(data_field_names, flist))
 
-        if(display_printouts):
-            if (UI is None):
-                print("Dataset created.")
-            elif (isinstance(UI, UserInterface.UserInterface)):
-                UI.updateConsole("Dataset created.")
+                if (not is_partial_cutout):
+                    data_list.append(Data(data_field_names, flist))
+                    metadata_list.append(Metadata(metadata_field_names, row_metadata))
+                else:
+                    ignored_data_list.append(Data(data_field_names, flist))
+                    ignored_metadata_list.append(Metadata(metadata_field_names, row_metadata))
 
-        super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
+        if (len(ignored_data_list) != 0):
+            self.generateIgnoredTargetsCSV(ignored_data_list, ignored_metadata_list)
+
+        return data_list, metadata_list
 
 import UserInterface
