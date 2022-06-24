@@ -6,6 +6,7 @@ Created on Thursday, June 9th
 
 import csv
 import math
+import os
 from copy import copy
 
 import PIL
@@ -148,7 +149,7 @@ class Dataset():
 
 class Zooniverse_Dataset(Dataset):
 
-    def __init__(self, dataset_filename, require_uniform_fields = True, display_printouts = False, UI = None):
+    def __init__(self, dataset_filename, ignore_partial_cutouts = False, require_uniform_fields = True, display_printouts = False, UI = None):
         """
         Initializes a Zooniverse_Dataset object (child Class of Dataset), a container which holds a list of Data objects and a list of Metadata
         objects. When accessing, per index a dictionary containing the corresponding Data object and Metadata object
@@ -158,6 +159,8 @@ class Zooniverse_Dataset(Dataset):
         ----------
             dataset_filename : str
                 The full path filename of the dataset CSV file to be used for the Zooniverse_Dataset object.
+            ignore_partial_cutouts : bool, optional
+                Determines whether to ignore non-square cutouts.
             require_uniform_fields : A boolean determining whether to require all data and metadata objects to have the
             exact same field names
             display_printouts : bool, optional
@@ -182,7 +185,7 @@ class Zooniverse_Dataset(Dataset):
 
         """
 
-        data_list, metadata_list = self.generateDataAndMetadataLists(dataset_filename, display_printouts, UI)
+        data_list, metadata_list = self.generateDataAndMetadataLists(dataset_filename, ignore_partial_cutouts, display_printouts, UI)
 
         super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
 
@@ -192,7 +195,7 @@ class Zooniverse_Dataset(Dataset):
             elif (isinstance(UI, UserInterface.UserInterface)):
                 UI.updateConsole("Dataset created.")
 
-    def generateDataAndMetadataLists(self, dataset_filename, display_printouts=False, UI=None):
+    def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
         data_list = []
         metadata_list = []
 
@@ -236,13 +239,13 @@ class Zooniverse_Dataset(Dataset):
                         break
 
                 if (display_printouts):
-                    if (is_partial_cutout):
+                    if (is_partial_cutout and ignore_partial_cutouts):
                         if (UI is None):
                             print(
-                                f"Row {count} out of {total_data_rows} in {dataset_filename} is a partial cutout and has not been processed.")
+                                f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                         elif (isinstance(UI, UserInterface.UserInterface)):
                             UI.updateConsole(
-                                f"Row {count} out of {total_data_rows} in {dataset_filename} is a partial cutout and has not been processed.")
+                                f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                     else:
                         if (UI is None):
                             print(f"Row {count} out of {total_data_rows} has been downloaded.")
@@ -253,15 +256,17 @@ class Zooniverse_Dataset(Dataset):
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i + 1))
 
-                if (not is_partial_cutout):
+                if (not is_partial_cutout or not ignore_partial_cutouts):
                     data_list.append(Data(data_field_names, flist))
                     metadata_list.append(Metadata(metadata_field_names, row_metadata))
                 else:
                     ignored_data_list.append(Data(data_field_names, flist))
-                    ignored_metadata_list.append(Metadata(metadata_field_names, row_metadata))
+                    ignored_metadata_list.append(Metadata(["Original Row: ", *metadata_field_names], [count, *row_metadata]))
 
         if (len(ignored_data_list) != 0):
             self.generateIgnoredTargetsCSV(ignored_data_list, ignored_metadata_list)
+        elif (os.path.exists("ignored-targets.csv")):
+            os.remove("ignored-targets.csv")
 
         return data_list, metadata_list
 
@@ -275,7 +280,7 @@ class Zooniverse_Dataset(Dataset):
 
 class CN_Dataset(Zooniverse_Dataset):
 
-    def __init__(self, dataset_filename, require_uniform_fields = True, display_printouts = False, UI = None):
+    def __init__(self, dataset_filename, ignore_partial_cutouts=False, require_uniform_fields = True, display_printouts = False, UI = None):
         """
         Initializes a CN_Dataset object (child Class of Zooniverse_Dataset), a container which holds a list of Data
         objects and a list of Metadata objects. When accessing, per index a dictionary containing the corresponding Data
@@ -286,12 +291,15 @@ class CN_Dataset(Zooniverse_Dataset):
         ----------
             dataset_filename : str
                 The full path filename of the dataset CSV file to be used for the CN_Dataset object.
+            ignore_partial_cutouts : bool, optional
+                Determines whether to ignore non-square cutouts.
             require_uniform_fields : A boolean determining whether to require all data and metadata objects to have the
             exact same field names
             display_printouts : bool, optional
                 Used to determine whether to display progress information in the console.
             UI : UI object, optional
                 User interface object to send progress information to.
+
         Notes
         -----
             The container structure of the CN_Dataset object is equivalent to an ordered list of dictionaries, each of which each contain
@@ -307,10 +315,9 @@ class CN_Dataset(Zooniverse_Dataset):
             The number of required pieces of metadata will most likely change throughout development, so make sure to
             keep updating this documentation regularly.
         """
+        super(CN_Dataset, self).__init__(dataset_filename,ignore_partial_cutouts, require_uniform_fields, display_printouts, UI)
 
-        super(CN_Dataset, self).__init__(dataset_filename, require_uniform_fields, display_printouts, UI)
-
-    def generateDataAndMetadataLists(self, dataset_filename, display_printouts=False, UI=None):
+    def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
         data_list = []
         metadata_list = []
 
@@ -386,11 +393,11 @@ class CN_Dataset(Zooniverse_Dataset):
                         break
 
                 if (display_printouts):
-                    if (is_partial_cutout):
+                    if (is_partial_cutout and ignore_partial_cutouts):
                         if (UI is None):
-                            print(f"Row {count} out of {total_data_rows} in {dataset_filename} is a partial cutout and has not been downloaded.")
+                            print(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                         elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} is a partial cutout and has not been downloaded.")
+                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                     else:
                         if (UI is None):
                             print(f"Row {count} out of {total_data_rows} has been downloaded.")
@@ -401,15 +408,17 @@ class CN_Dataset(Zooniverse_Dataset):
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i + 1))
 
-                if (not is_partial_cutout):
+                if (not is_partial_cutout or not ignore_partial_cutouts):
                     data_list.append(Data(data_field_names, flist))
                     metadata_list.append(Metadata(metadata_field_names, row_metadata))
                 else:
                     ignored_data_list.append(Data(data_field_names, flist))
-                    ignored_metadata_list.append(Metadata(metadata_field_names, row_metadata))
+                    ignored_metadata_list.append(Metadata(["Original Row: ", *metadata_field_names], [count, *row_metadata]))
 
         if (len(ignored_data_list) != 0):
             self.generateIgnoredTargetsCSV(ignored_data_list, ignored_metadata_list)
+        elif(os.path.exists("ignored-targets.csv")):
+            os.remove("ignored-targets.csv")
 
         return data_list, metadata_list
 
