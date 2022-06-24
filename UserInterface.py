@@ -535,12 +535,24 @@ class UserInterface:
             float(self.FOV.get())
         except:
             warningFlag=6
+        
+        try:
+            int(self.minBright.get())
+        except ValueError:
+            warningFlag=8
+       
+        try:
+            int(self.maxBright.get())
+        except ValueError:
+            warningFlag=9
 
         if(not os.path.isdir(self.pngDirectory.get())):
             try:
                 os.mkdir(self.pngDirectory.get())
             except:
                 warningFlag=7
+
+            
 
         
                     
@@ -563,6 +575,10 @@ class UserInterface:
             whatToSay='Input a single numerical value for FOV!'
         elif warningFlag==7:
             whatToSay='Input a valid directory!'
+        elif warningFlag==8:
+            whatToSay='Input a numerical value for minbright!'
+        elif warningFlag==9:
+            whatToSay='Input a numerical value for maxbright!'
         else:
             return False
 
@@ -593,7 +609,7 @@ class UserInterface:
                 now = datetime.now()
                 self.updateConsole(f"Started pipeline at: {now}")
             
-            metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()), f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(), "FOV" : self.FOV.get(), f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY" : self.pngDirectory.get()}
+            metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()), f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(), "FOV" : self.FOV.get(), f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY" : int(self.minBright.get()),f"{Data.Metadata.privatization_symbol}MINBRIGHT" : int(self.maxBright.get()),f"{Data.Metadata.privatization_symbol}MAXBRIGHT" : self.pngDirectory.get()}
 
             # Creates metadata-target.csv
             ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
@@ -685,6 +701,8 @@ class Session():
         self.rememberMe = copy(UI.rememberMe.get())
         self.FOV = copy(UI.FOV.get())
         self.pngDirectory = copy(UI.pngDirectory.get())
+        self.minBright = copy(UI.minBright.get())
+        self.maxBright = copy(UI.maxBright.get())
 
     def setUIVariables(self, UI):
         UI.state.set(copy(self.state))
@@ -701,6 +719,8 @@ class Session():
         UI.rememberMe.set(copy(self.rememberMe))
         UI.FOV.set(copy(self.FOV))
         UI.pngDirectory.set(copy(self.pngDirectory))
+        UI.minBright.set(copy(self.minBright))
+        UI.maxBright.set(copy(self.maxBright))
 
     def save(self,UI):
         self.saveUIVariables(UI)
