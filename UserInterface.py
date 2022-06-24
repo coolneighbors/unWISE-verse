@@ -249,7 +249,6 @@ class UserInterface:
         # png directory entry
         self.pngDirectory_frame, self.pngDirectory_entry = self.makeEntryField(self.window, 'PNG Directory',self.pngDirectory)
 
-        
         #console printouts
         self.console_scrolled_text_frame = tk.Frame(master=self.window)
         self.console_scrolled_text = ScrolledText(master=self.console_scrolled_text_frame, height=30, width=90, font=("consolas", "8", "normal"),state=tk.DISABLED)
@@ -267,9 +266,9 @@ class UserInterface:
         ----------------------------------------------------
         |   setID   |manifestFile| manSearch  |save session|
         ----------------------------------------------------
-        |   help    |   submit   |            |            |
+        |   help    |pngDirectory| dirSearch  |  metadata  |
         ----------------------------------------------------
-        | manifest  |   upload   |    full    |  metadata  |
+        | manifest  |   upload   |    full    |   submit   |
         ----------------------------------------------------
         |  console  |  console   |  console   |   console  |
         ----------------------------------------------------
@@ -389,6 +388,7 @@ class UserInterface:
         None.
 
         '''
+
        top= tk.Toplevel(self.window)
 
 
@@ -472,15 +472,12 @@ class UserInterface:
         top = tk.Toplevel(self.window)
         top.geometry("300x300")
         self.center_window(top)
-        
-        
+
         top.rowconfigure(list(range(4)), minsize=50,weight=1)
         top.columnconfigure(list(range(2)), minsize = 50, weight=1)
         top.grab_set()
         
         top.title("Metadata")
-        
-        
         
         metadata_label = tk.Label(master=top, text="Metadata",font=("Arial", 18))
         metadata_label.grid(row=0,column=0,padx=10,pady=10, columnspan=2)
@@ -500,15 +497,13 @@ class UserInterface:
         self.FOV_frame.grid(row=3, column=0,padx=10,pady=10)
         
         
-        self.minBright_frame, self.minBright_entry = self.makeEntryField(top, 'Minbright (vega nmags)', self.minBright)
+        self.minBright_frame, self.minBright_entry = self.makeEntryField(top, 'Minbright (Vega nmags)', self.minBright)
         self.minBright_entry.config(width=15)
         self.minBright_frame.grid(row=2, column=1,padx=10,pady=10)
         
-        self.maxBright_frame, self.maxBright_entry = self.makeEntryField(top, 'Maxbright (vega nmags)', self.maxBright)
+        self.maxBright_frame, self.maxBright_entry = self.makeEntryField(top, 'Maxbright (Vega nmags)', self.maxBright)
         self.maxBright_entry.config(width=15)
         self.maxBright_frame.grid(row=3, column=1,padx=10,pady=10)
-        
-
 
     def overwriteManifestButtonPressed(self, value, popup):
         self.overwriteManifest.set(value)
@@ -551,11 +546,6 @@ class UserInterface:
                 os.mkdir(self.pngDirectory.get())
             except:
                 warningFlag=7
-
-            
-
-        
-                    
 
         if self.state.get() == '':
             warningFlag=1
