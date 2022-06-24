@@ -227,7 +227,7 @@ class Spout:
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
 
-        dataset = CN_Dataset(dataset_filename,require_uniform_fields=False, display_printouts=self.display_printouts, UI=self.UI)
+        dataset = CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=self.display_printouts, UI=self.UI)
         if(enable_strict_manifest):
             self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
         else:
@@ -265,7 +265,7 @@ class Spout:
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
 
-        dataset = CN_Dataset(dataset_filename, require_uniform_fields=False, display_printouts=display_printouts, UI=UI)
+        dataset = CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=display_printouts, UI=UI)
         if (enable_strict_manifest):
             Defined_Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
         else:
