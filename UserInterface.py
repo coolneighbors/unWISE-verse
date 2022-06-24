@@ -500,11 +500,11 @@ class UserInterface:
         self.FOV_frame.grid(row=3, column=0,padx=10,pady=10)
         
         
-        self.minBright_frame, self.minBright_entry = self.makeEntryField(top, 'Minbright (vega mmags)', self.minBright)
+        self.minBright_frame, self.minBright_entry = self.makeEntryField(top, 'Minbright (vega nmags)', self.minBright)
         self.minBright_entry.config(width=15)
         self.minBright_frame.grid(row=2, column=1,padx=10,pady=10)
         
-        self.maxBright_frame, self.maxBright_entry = self.makeEntryField(top, 'Maxbright (vega mmags)', self.maxBright)
+        self.maxBright_frame, self.maxBright_entry = self.makeEntryField(top, 'Maxbright (vega nmags)', self.maxBright)
         self.maxBright_entry.config(width=15)
         self.maxBright_frame.grid(row=3, column=1,padx=10,pady=10)
         
