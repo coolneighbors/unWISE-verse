@@ -214,6 +214,8 @@ class UserInterface:
         self.scaleFactor = tk.StringVar(value="1")
         self.FOV = tk.StringVar(value="120")
         self.pngDirectory = tk.StringVar(value="pngs")
+        self.minBright = tk.StringVar(value="-15")
+        self.maxBright = tk.StringVar(value="120")
 
         self.printProgress = tk.BooleanVar(value=False)
         self.saveSession = tk.BooleanVar(value=True)
@@ -224,6 +226,7 @@ class UserInterface:
         self.metadataTargetFile = tk.StringVar(value="metadata-target.csv")
 
         self.session = Session(self)
+        
 
     def frameInit(self):
         '''
@@ -467,28 +470,44 @@ class UserInterface:
         '''
 
         top = tk.Toplevel(self.window)
-        top.geometry("100x200")
+        top.geometry("300x300")
         self.center_window(top)
-        top.rowconfigure(list(range(4)), weight=1)
-        top.columnconfigure(list(range(1)), weight=1)
+        
+        
+        top.rowconfigure(list(range(4)), minsize=50,weight=1)
+        top.columnconfigure(list(range(2)), minsize = 50, weight=1)
         top.grab_set()
+        
         top.title("Metadata")
+        
+        
+        
         metadata_label = tk.Label(master=top, text="Metadata",font=("Arial", 18))
-        metadata_label.grid(row=0,column=0)
+        metadata_label.grid(row=0,column=0,padx=10,pady=10, columnspan=2)
 
         # add grid checkbox
         self.addGrid_check_button = tk.Checkbutton(master=top, text='Add Grid', variable=self.addGrid, onvalue=1, offvalue=0)
-        self.addGrid_check_button.grid(row=1, column=0)
+        self.addGrid_check_button.grid(row=1, column=0,padx=10,pady=10)
 
         # scale factor entry
         self.scaleFactor_frame, self.scaleFactor_entry = self.makeEntryField(top, 'Scale Factor',self.scaleFactor)
         self.scaleFactor_entry.config(width=15)
-        self.scaleFactor_frame.grid(row=2, column=0)
+        self.scaleFactor_frame.grid(row=2, column=0,padx=10,pady=10)
 
         # FOV entry
         self.FOV_frame, self.FOV_entry = self.makeEntryField(top, 'FOV (arcseconds)', self.FOV)
         self.FOV_entry.config(width=15)
-        self.FOV_frame.grid(row=3, column=0)
+        self.FOV_frame.grid(row=3, column=0,padx=10,pady=10)
+        
+        
+        self.minBright_frame, self.minBright_entry = self.makeEntryField(top, 'Minbright (vega mmags)', self.minBright)
+        self.minBright_entry.config(width=15)
+        self.minBright_frame.grid(row=2, column=1,padx=10,pady=10)
+        
+        self.maxBright_frame, self.maxBright_entry = self.makeEntryField(top, 'Maxbright (vega mmags)', self.maxBright)
+        self.maxBright_entry.config(width=15)
+        self.maxBright_frame.grid(row=3, column=1,padx=10,pady=10)
+        
 
 
     def overwriteManifestButtonPressed(self, value, popup):
