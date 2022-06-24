@@ -609,7 +609,12 @@ class UserInterface:
                 now = datetime.now()
                 self.updateConsole(f"Started pipeline at: {now}")
             
-            metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()), f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(), "FOV" : self.FOV.get(), f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY" : int(self.minBright.get()),f"{Data.Metadata.privatization_symbol}MINBRIGHT" : int(self.maxBright.get()),f"{Data.Metadata.privatization_symbol}MAXBRIGHT" : self.pngDirectory.get()}
+            metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()),
+                             f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(),
+                             "FOV" : self.FOV.get(),
+                             f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY" : self.pngDirectory.get(),
+                             f"{Data.Metadata.privatization_symbol}MINBRIGHT" : int(self.minBright.get()),
+                             f"{Data.Metadata.privatization_symbol}MAXBRIGHT" : int(self.maxBright.get())}
 
             # Creates metadata-target.csv
             ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
