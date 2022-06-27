@@ -412,7 +412,7 @@ class CN_Dataset(Zooniverse_Dataset):
                     png_count = 0
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY + "/" + sub_directory, scale_factor=SCALE, addGrid=GRID)
+                flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY + "\\" + sub_directory, scale_factor=SCALE, addGrid=GRID)
                 png_count += len(flist)
 
                 is_partial_cutout = False
