@@ -324,8 +324,10 @@ class CN_Dataset(Zooniverse_Dataset):
         ignored_data_list = []
         ignored_metadata_list = []
 
+        sub_directory_limit = 9999
+        sub_directory_threshold = 1000
+        
         # Currently is only able to use CSV files
-
         total_data_rows = 0
         with open(dataset_filename, newline='') as dataset_file:
             total_data_rows = len(list(dataset_file)) - 1
@@ -333,8 +335,9 @@ class CN_Dataset(Zooniverse_Dataset):
         with open(dataset_filename, newline='') as dataset_file:
             reader = csv.DictReader(dataset_file)
             count = 0
+            png_count = 0
+
             for row in reader:
-                count += 1
                 # Get metadata
                 RA = float(row['RA'])
                 DEC = float(row['DEC'])
@@ -344,6 +347,21 @@ class CN_Dataset(Zooniverse_Dataset):
                 FOV = float(row['FOV'])
                 MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
                 MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+
+                if(count == 0):
+                    sub_directory_values = []
+                    for sub_directory_name in os.listdir(PNG_DIRECTORY):
+                        sub_directory_values.append(int(sub_directory_name))
+                    max_value = max(sub_directory_values, default=-1)
+                    max_value = max_value + 1
+                    if(max_value > sub_directory_limit):
+                        raise OverflowError(f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
+                    sub_directory = str(max_value)
+                    for i in range(len(str(sub_directory_limit)) - len(sub_directory)):
+                        if (len(sub_directory) < len(str(sub_directory_limit))):
+                            sub_directory = "0" + sub_directory
+
+                count += 1
 
                 # arc-seconds per pixel
                 unWISE_pixel_ratio = 2.75
@@ -383,8 +401,19 @@ class CN_Dataset(Zooniverse_Dataset):
                 row_metadata = list(row.values())
                 metadata_field_names = list(row.keys())
 
+
+                if (png_count >= sub_directory_threshold):
+                    sub_directory = str(int(sub_directory) + 1)
+                    if (int(sub_directory) + 1 > sub_directory_limit):
+                        raise OverflowError(f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
+                    for i in range(len(str(sub_directory_limit))-len(sub_directory)):
+                        if (len(sub_directory) < len(str(sub_directory_limit))):
+                            sub_directory = "0" + sub_directory
+                    png_count = 0
+
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY, scale_factor=SCALE, addGrid=GRID)
+                flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY + "/" + sub_directory, scale_factor=SCALE, addGrid=GRID)
+                png_count += len(flist)
 
                 is_partial_cutout = False
                 for filename in flist:
