@@ -53,6 +53,7 @@ class Dataset():
 
         self.data_list = copy(data_list)
         self.metadata_list = copy(metadata_list)
+        self.require_uniform_fields = copy(require_uniform_fields)
 
         if (len(self.metadata_list) == 0):
             for data in self.data_list:
@@ -63,7 +64,7 @@ class Dataset():
 
         for data in self.data_list:
             for other_data in self.data_list:
-                if(require_uniform_fields):
+                if(self.require_uniform_fields):
                     if(not data.have_equal_fields(other_data)):
                         raise NonUniformFieldsError(data, other_data)
                 else:
@@ -73,7 +74,7 @@ class Dataset():
 
         for metadata in self.metadata_list:
             for other_metadata in self.metadata_list:
-                if (require_uniform_fields):
+                if (self.require_uniform_fields):
                     if (not metadata.have_equal_fields(other_metadata)):
                         raise NonUniformFieldsError(metadata, other_metadata)
                 else:
@@ -189,9 +190,8 @@ class Zooniverse_Dataset(Dataset):
             It should work as long as you properly return a list of Data objects and a list of Metadata objects.
 
         """
-
+        self.require_uniform_fields = copy(require_uniform_fields)
         data_list, metadata_list = self.generateDataAndMetadataLists(dataset_filename, ignore_partial_cutouts, display_printouts, UI)
-
         super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
 
         if (display_printouts):
@@ -277,7 +277,7 @@ class Zooniverse_Dataset(Dataset):
         return data_list, metadata_list
 
     def generateIgnoredTargetsCSV(self, ignored_data_list, ignored_metadata_list):
-        temp_dataset = Dataset(ignored_data_list,ignored_metadata_list)
+        temp_dataset = Dataset(ignored_data_list,ignored_metadata_list,self.require_uniform_fields)
         with open("ignored-targets.csv", "w", newline='') as ignored_targets_file:
             writer = csv.DictWriter(ignored_targets_file, [*temp_dataset.metadata_field_names,*temp_dataset.data_field_names])
             writer.writeheader()
