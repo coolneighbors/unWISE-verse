@@ -1,4 +1,3 @@
-from flipbooks import wv
 
 def generate_legacy_survey_url(RA, DEC, zoom = 14):
     legacy_survey_template_url = "https://www.legacysurvey.org/viewer?ra={}&dec={}&layer=unwise-neo6&zoom={}"

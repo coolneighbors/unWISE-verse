@@ -216,6 +216,7 @@ class UserInterface:
         self.pngDirectory = tk.StringVar(value="pngs")
         self.minBright = tk.StringVar(value="-15")
         self.maxBright = tk.StringVar(value="120")
+        self.gridCount = tk.StringVar(value="10")
 
         self.printProgress = tk.BooleanVar(value=False)
         self.saveSession = tk.BooleanVar(value=True)
@@ -486,6 +487,10 @@ class UserInterface:
         self.addGrid_check_button = tk.Checkbutton(master=top, text='Add Grid', variable=self.addGrid, onvalue=1, offvalue=0)
         self.addGrid_check_button.grid(row=1, column=0,padx=10,pady=10)
 
+        # grid count entry
+        self.gridCount_frame, self.gridCount_entry = self.makeEntryField(top, 'Grid Count', self.gridCount)
+        self.gridCount_frame.grid(row=1,column=1,padx=10,pady=10)
+
         # scale factor entry
         self.scaleFactor_frame, self.scaleFactor_entry = self.makeEntryField(top, 'Scale Factor',self.scaleFactor)
         self.scaleFactor_entry.config(width=15)
@@ -530,7 +535,13 @@ class UserInterface:
             float(self.FOV.get())
         except:
             warningFlag=6
-        
+
+        if (not os.path.isdir(self.pngDirectory.get())):
+            try:
+                os.mkdir(self.pngDirectory.get())
+            except:
+                warningFlag = 7
+
         try:
             int(self.minBright.get())
         except ValueError:
@@ -541,11 +552,10 @@ class UserInterface:
         except ValueError:
             warningFlag=9
 
-        if(not os.path.isdir(self.pngDirectory.get())):
-            try:
-                os.mkdir(self.pngDirectory.get())
-            except:
-                warningFlag=7
+        try:
+            int(self.gridCount.get())
+        except ValueError:
+            warningFlag=10
 
         if self.state.get() == '':
             warningFlag=1
@@ -569,6 +579,8 @@ class UserInterface:
             whatToSay='Input a numerical value for minbright!'
         elif warningFlag==9:
             whatToSay='Input a numerical value for maxbright!'
+        elif warningFlag==10:
+            whatToSay='Input a numerical value for grid count!'
         else:
             return False
 
@@ -601,10 +613,11 @@ class UserInterface:
             
             metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()),
                              f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(),
-                             "FOV" : self.FOV.get(),
-                             f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY" : self.pngDirectory.get(),
-                             f"{Data.Metadata.privatization_symbol}MINBRIGHT" : int(self.minBright.get()),
-                             f"{Data.Metadata.privatization_symbol}MAXBRIGHT" : int(self.maxBright.get())}
+                             "FOV": self.FOV.get(),
+                             f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY": self.pngDirectory.get(),
+                             f"{Data.Metadata.privatization_symbol}MINBRIGHT": int(self.minBright.get()),
+                             f"{Data.Metadata.privatization_symbol}MAXBRIGHT": int(self.maxBright.get()),
+                             f"{Data.Metadata.privatization_symbol}GRIDCOUNT": int(self.gridCount.get())}
 
             # Creates metadata-target.csv
             ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
@@ -698,6 +711,7 @@ class Session():
         self.pngDirectory = copy(UI.pngDirectory.get())
         self.minBright = copy(UI.minBright.get())
         self.maxBright = copy(UI.maxBright.get())
+        self.gridCount = copy(UI.gridCount.get())
 
     def setUIVariables(self, UI):
         UI.state.set(copy(self.state))
@@ -716,6 +730,7 @@ class Session():
         UI.pngDirectory.set(copy(self.pngDirectory))
         UI.minBright.set(copy(self.minBright))
         UI.maxBright.set(copy(self.maxBright))
+        UI.gridCount.set(copy(self.gridCount))
 
     def save(self,UI):
         self.saveUIVariables(UI)

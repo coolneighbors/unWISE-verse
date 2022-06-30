@@ -8,9 +8,14 @@ import csv
 import math
 import os
 from copy import copy
+from statistics import mean
 
+import astropy
+from astropy import time
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 import PIL
-from flipbooks import wv
+from flipbooks import WiseViewQuery
 import MetadataPointers
 
 from Data import Data, Metadata
@@ -225,10 +230,11 @@ class Zooniverse_Dataset(Dataset):
                 metadata_field_names = list(row.keys())
 
                 # set WV parameters to RA and DEC
-                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC)
+                wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC)
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(wise_view_parameters, "pngs")
+
+                flist = wise_view_query.downloadWiseViewData("pngs")
 
                 is_partial_cutout = False
                 for filename in flist:
@@ -343,6 +349,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 DEC = float(row['DEC'])
                 PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
                 GRID = int(row[f'{Metadata.privatization_symbol}GRID'])
+                GRIDCOUNT= int(row[f'{Metadata.privatization_symbol}GRIDCOUNT'])
                 SCALE = row[f'{Metadata.privatization_symbol}SCALE']
                 FOV = float(row['FOV'])
                 MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
@@ -382,22 +389,53 @@ class CN_Dataset(Zooniverse_Dataset):
                     GRID = False
 
                 # set WV parameters to RA and DEC
-                wise_view_parameters = wv.custom_params(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT)
+                wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT)
 
                 # Set generated metadata
                 row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
-                row['Data Source'] = "http://unwise.me/"
+                row['Data Source'] = f"[unWISE](+tab+http://unwise.me/)"
                 row['unWISE Pixel Scale'] = f"~{unWISE_pixel_ratio} arcseconds per pixel"
-                row['WISEVIEW'] = wv.generate_wv_url(wise_view_parameters)
+                modified_julian_date_pairs = wise_view_query.requestMetadata("mjds")
+                date_str = ""
+                for i in range(len(modified_julian_date_pairs)):
+                    for j in range(len(wise_view_query.requestMetadata("mjds")[i])):
+                        if(j == 0):
+                            time_start = time.Time(wise_view_query.requestMetadata("mjds")[i][j],format="mjd").to_value("decimalyear")
+                        if(j == len(wise_view_query.requestMetadata("mjds")[i])-1):
+                            time_end = time.Time(wise_view_query.requestMetadata("mjds")[i][j],format="mjd").to_value("decimalyear")
+                    if(time_start == time_end):
+                        if(i != len(modified_julian_date_pairs)-1):
+                            date_str = date_str + f"Frame {i+1}: {round(time_start,2)}, "
+                        else:
+                            date_str = date_str + f"Frame {i+1}: {round(time_start,2)}"
+                    else:
+                        if(i != len(modified_julian_date_pairs)-1):
+                            date_str = date_str + f"Frame {i+1}: {round(mean([time_start,time_end]),2)}, "
+                        else:
+                            date_str = date_str + f"Frame {i+1}: {round(mean([time_start,time_end]),2)}"
+                row["Decimal Year Epochs"] = date_str
+
+                ICRS_coordinates = SkyCoord(ra=RA*u.degree, dec=DEC*u.degree, frame='icrs')
+
+                galactic_coordinates = ICRS_coordinates.transform_to(frame="galactic")
+                row['Galactic Coordinates'] = galactic_coordinates.to_string("decimal")
+
+                ecliptic_coordinates = ICRS_coordinates.transform_to(frame=astropy.coordinates.GeocentricMeanEcliptic)
+                row['Ecliptic Coordinates'] = ecliptic_coordinates.to_string("decimal")
+
+                row['WISEVIEW'] = f"[WiseView](+tab+{wise_view_query.generateWiseViewURL()})"
 
                 # Radius is the smallest circle radius which encloses the square image.
-                # This is done to ensure he entire image frame is searched.
+                # This is done to ensure the entire image frame is searched.
                 radius = (math.sqrt(2) / 2) * FOV
-                row['SIMBAD'] = MetadataPointers.generate_SIMBAD_url(RA, DEC, radius)
+                row['SIMBAD'] = f"[SIMBAD](+tab+{MetadataPointers.generate_SIMBAD_url(RA, DEC, radius)})"
 
-                row['Legacy Surveys'] = MetadataPointers.generate_legacy_survey_url(RA, DEC)
-                row['VizieR'] = MetadataPointers.generate_VizieR_url(RA, DEC, FOV)
-                row['IRSA'] = MetadataPointers.generate_IRSA_url(RA, DEC)
+                row['Legacy Surveys'] = f"[Legacy Surveys](+tab+{MetadataPointers.generate_legacy_survey_url(RA, DEC)})"
+
+                row['VizieR'] = f"[VizieR](+tab+{MetadataPointers.generate_VizieR_url(RA, DEC, FOV)})"
+
+                row['IRSA'] = f"[IRSA](+tab+{MetadataPointers.generate_IRSA_url(RA, DEC)})"
+
                 row_metadata = list(row.values())
                 metadata_field_names = list(row.keys())
 
@@ -412,7 +450,7 @@ class CN_Dataset(Zooniverse_Dataset):
                     png_count = 0
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wv.png_set(wise_view_parameters, PNG_DIRECTORY + "\\" + sub_directory, scale_factor=SCALE, addGrid=GRID)
+                flist = wise_view_query.downloadWiseViewData(PNG_DIRECTORY + "\\" + sub_directory, scale_factor=SCALE, addGrid=GRID, gridCount=GRIDCOUNT)
                 png_count += len(flist)
 
                 is_partial_cutout = False
