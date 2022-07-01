@@ -128,14 +128,14 @@ For
     Added: GUI -- allows user to easily input Zooniverse credentials, filenames, and project/subject set ID. 
 	    Multiprocessing - significantly speeds up image download time by using multiple threads at once. 
 	Refactored: flipbooks -- Transfered wv.py and related scripts to flipbooks repo. Created python package from that repo. 
-	To Do: Compatability with FITS files. Make UI run throghout program rather than only at the start. Add more options for metadata. 
+	To Do: Compatability with FITS files. Make UI run throghout program rather than only at the start. Add more options for metadata.
 	
 ## License
 
 Distributed under the MIT License (see LICENSE.txt)
 
 ## Acknowledgments
-This pipeline is built on the WiseView platform
+This pipeline is built on the WiseView platform.
 
 Caselden D., Westin P. I, Meisner A., Kuchner M. and Colin G. 2018 WiseView: Visualizing Motion and Variability of Faint WISE Sources, Astrophysics Source Code Library ascl: 1806.004
 
