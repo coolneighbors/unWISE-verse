@@ -1,8 +1,8 @@
-# FullPipeline
+# ZPipe
 
 An integrated unWISE data collection and Zooniverse upload pipeline using the Panoptes-Client
 ## Description
-FullPipeline allows a user to quickly download a large set of target data from the unWISE AWS and upload the data to a Zooniverse subject set. In addition, users have the option to just download data without uploading, or uploading an existing set set of target png's. 
+ZPipe allows a user to quickly download a large set of target data from the WiseView server and upload the data to a Zooniverse subject set. In addition, users have the option to just download data without uploading, or uploading an existing set set of target png's. 
 ## Getting Started
 ### Dependencies
 * Valid Zooniverse login credentials, contributor access to an existing project. 
@@ -24,13 +24,10 @@ FullPipeline allows a user to quickly download a large set of target data from t
 pip install panoptes-client
 		Pillow
 		requests
-		os
-		shutil
 		csv
-		python-magic-bin
 		git+https://github.com/coolneighbors/flipbooks.git
 		tk
-		DateTime
+        python-magic-bin
 
 ```
 * Clone into git repository at github.com/coolneighbors/ZPipe
@@ -39,18 +36,20 @@ git clone http://github.com/coolneighbors/ZPipe
 ```
 
 ### Executing program
-* FullPipeline allows the user to download and upload, just download, or just upload targets to a subject set in Zooniverse
+* ZPipe allows the user to download and upload, just download, or just upload targets to a subject set in Zooniverse
 
 * If you intend to download data from the unWISE catologue, this program requires a list of targets.
 	* The targets should be provided in a csv file as follows:
 	* Note all ra_n and dec_n should be numerical values (decimals allowed)
+        * Unique metadata for each target should be added in subsequent columns, along with a header. This header does not need to be "unique_metadata" and should be a label that describes the metadata being added to each target. For example, notes for each target may be added under a "Notes" column
+        * To make a set of metadata private or prevent zooniverse users from accessing data under a header, use a "!" or "#" tag. For more details, see the Zooniverse guide on metadata visibility.
 ```
-RA,DEC
-ra_1,dec_1
-ra_2,dec_2
-ra_3,dec_3
+RA,DEC,unique_metadata
+ra_1,dec_1,metadata1
+ra_2,dec_2,metadata2
+ra_3,dec_3,metadata3
 ...,...
-ra_n,dec_n
+ra_n,dec_n,metadataN
 ```
 
 * Navigate to FullPipeline directory, and in cmd/powershell enter the command
@@ -62,9 +61,15 @@ Select desired program behavior using the bottom row of buttons.
 
 Enter the required fields for zooniverse and or file information.
 
-If you would like to rescale the image, click the metadata button and input an integer scaling factor (default is 1)
+You can change the size, FOV, post processing effects, and image parameters by changing options under the "metadata" option. 
 
-If you would like to add a grid to the image, click the metadata button and select "Grid"
+* If you would like to rescale the image, click the metadata button and input an integer scaling factor (default is 1)
+
+* If you would like to add a grid to the image, click the metadata button and select "Grid"
+
+* Change the FOV of the image by modifying the FOV field (integer inputs only)
+
+* Change the minbright and maxbright of the image by changing the values in these respective fields. Minbright sets all pixel values below a set luminosity (in vega nmags) to black, while maxbright sets all pixel values above a set luminosity (in vega nmags). Pixel values in between these min/maxbright parameters are assigned to a gray value by a linear stretch between the min and maxbright parameters. 
 
 Select "Print progress" to view program progess. Do not change this selection after hitting submit and before program has completed. 
 
@@ -72,7 +77,7 @@ When all selections have been made and fields are entered, hit "Submit"
 
 ## Notes
 
-FullPipeline uses a semi-modular metadata system. In order to add another line of metadata to the subject set, add a ![metadata] column to the second row of master_header.txt
+ZPipe uses a semi-modular metadata system. In order to add another line of metadata to the subject set, add a ![metadata] column to the second row of master_header.txt
 Failure to do so will result in an error message.
 
 You can turn off cross-checking with a master_header.txt file by changing the enable_strict_manifest field in the generate_manifest function of spout.py to false. This is not recommended.
