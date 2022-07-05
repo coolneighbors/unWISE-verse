@@ -77,6 +77,25 @@ As Jim has already mentioned, there will certainly not be an all-encompassing so
 
 cheers
 
+### **Feedback Summary**
+* Add links: 
+    WiseView
+    SIMBAD
+    VizeR
+    IRSA Finder Chart
+    LSSV
+
+* Additional button for more than one moving object in a frame
+
+* Add some form of exposure control
+
+* Ensure that the grid doesnt cover any image content. Can there be a toggleable grid? Possibly have just the grid intersectuions as plus signs rather than whole lines
+
+* Show which part of the frame is under investigation by highlighting or similar – or is it better to look through the whole frame?
+
+* Make image size approx. 387x387
+
+
 
 ## Alpha-1 Test
 
@@ -91,5 +110,12 @@ The grids in these examples actually look OK to me. Because they run along the p
 Could the default blink interval in the Wiseview link be reduced? 500 ms is awfully slow.
 The field of view in the IRSA link does not match what is shown the flipbook or Wiseview, but I find that helpful. There are times when it is helpful to easily see a larger area, and IRSA can always be zoomed in at will if desired.
 My classification procedure has been to first examine the flipbook for indications and direction of motion. I then go to Wiseview to check whether exposure adjustments reveal anything new. Finally, if movement is questionable, I check for position shifts over time in IRSA and proper motion data in VizieR. My conclusion for several flipbooks has been that I can't positively say there is motion, but if there is, it is in direction X. In every case so far, IRSA and VizieR have confirmed that guess, so I have responded YES to the movement question (I would have answered NO if directions differed). Is that the desired answer in such cases, or should the answer be NO unless the flipbook itself shows unquestionable evidence of motion? Also, every subject I've looked at so far has shown motion. If these test subjects are typical of the entire final set, will it be necessary to include some random sky areas to hit the positivity sweet spot Marc mentioned last week?
+
+### **Feedback Summary**
+* Add subject ID number to either image or metadata
+
+* Should classifiers answer yes or no in cases where there is possibly movement but not guaranteed?
+
+* Almost every subject seems to have motion, will that be typical in final set? Maybe we need to add non moving random fields to reach the sweet spot?
 
 
