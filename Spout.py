@@ -331,6 +331,8 @@ class Spout:
 
         subjects = []
         metadata_dict = {}
+        subject_count = 0
+        subject_total = len(subject_data_dicts)
         for subject_data_dict in subject_data_dicts:
             subject = Subject()
             subject.links.project = self.linked_project
@@ -338,7 +340,7 @@ class Spout:
                 split_index = 1
                 left_side_of_key = key[:split_index]
                 right_side_of_key = key[split_index:]
-                if(left_side_of_key == "f"):
+                if (left_side_of_key == "f"):
                     try:
                         int(right_side_of_key)
                         subject.add_location(subject_data_dict[key])
@@ -349,7 +351,16 @@ class Spout:
 
             subject.metadata.update(metadata_dict)
             subject.save()
+            subject.reload()
+            subject.metadata.update({"ID": subject.id})
+            subject.save()
             subjects.append(subject)
+            subject_count += 1
+            if (self.UI is None):
+                print("Created subject: " + str(subject.id))
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole(f"Created subject {subject_count} out of {subject_total}: " + str(subject.id))
+
 
         if(self.display_printouts):
             if(self.UI is None):

@@ -10,6 +10,7 @@ import tkinter as tk
 from copy import copy
 from tkinter import filedialog as fd
 from tkinter.scrolledtext import ScrolledText
+from tkinter.colorchooser import askcolor
 import ZooniversePipeline
 import pickle
 import Data
@@ -211,20 +212,23 @@ class UserInterface:
         self.subjectSetID = tk.StringVar(value="")
         self.targetFile = tk.StringVar(value="")
         self.manifestFile = tk.StringVar(value="")
-        self.scaleFactor = tk.StringVar(value="1")
+        self.metadataTargetFile = tk.StringVar(value="metadata-target.csv")
+        self.scaleFactor = tk.StringVar(value="12")
         self.FOV = tk.StringVar(value="120")
         self.pngDirectory = tk.StringVar(value="pngs")
         self.minBright = tk.StringVar(value="-15")
         self.maxBright = tk.StringVar(value="120")
-        self.gridCount = tk.StringVar(value="10")
+        self.gridCount = tk.StringVar(value="5")
+        self.gridType = tk.StringVar(value="Solid")
 
         self.printProgress = tk.BooleanVar(value=False)
         self.saveSession = tk.BooleanVar(value=True)
         self.overwriteManifest = tk.BooleanVar(value=False)
-        self.addGrid = tk.BooleanVar(value=False)
+        self.addGrid = tk.BooleanVar(value=True)
+        self.ignorePartialCutouts = tk.BooleanVar(value=True)
         self.rememberMe = tk.BooleanVar(value=False)
 
-        self.metadataTargetFile = tk.StringVar(value="metadata-target.csv")
+        self.gridColor = (128,0,0)
 
         self.session = Session(self)
         
@@ -471,44 +475,71 @@ class UserInterface:
         '''
 
         top = tk.Toplevel(self.window)
-        top.geometry("300x300")
+        top.geometry("420x300")
         self.center_window(top)
 
-        top.rowconfigure(list(range(4)), minsize=50,weight=1)
-        top.columnconfigure(list(range(2)), minsize = 50, weight=1)
+        top.rowconfigure(list(range(2)), weight=1)
+        top.columnconfigure(list(range(1)), weight=1)
         top.grab_set()
         
         top.title("Metadata")
-        
-        metadata_label = tk.Label(master=top, text="Metadata",font=("Arial", 18))
-        metadata_label.grid(row=0,column=0,padx=10,pady=10, columnspan=2)
+
+
+        metadata_label = tk.Label(master=top, text="Metadata",font=("Arial", 28))
+        metadata_label.grid(row=0,column=0)
+        input_frame = tk.Frame(master=top)
+        input_frame.rowconfigure(list(range(4)), weight=1)
+        input_frame.columnconfigure(list(range(3)), weight=1)
+        input_frame.grid(row=1,column=0)
 
         # add grid checkbox
-        self.addGrid_check_button = tk.Checkbutton(master=top, text='Add Grid', variable=self.addGrid, onvalue=1, offvalue=0)
+        self.addGrid_check_button = tk.Checkbutton(master=input_frame, text='Add Grid', variable=self.addGrid, onvalue=1, offvalue=0)
         self.addGrid_check_button.grid(row=1, column=0,padx=10,pady=10)
 
         # grid count entry
-        self.gridCount_frame, self.gridCount_entry = self.makeEntryField(top, 'Grid Count', self.gridCount)
+        self.gridCount_frame, self.gridCount_entry = self.makeEntryField(input_frame, 'Grid Count', self.gridCount)
+        self.gridCount_entry.config(width=15)
         self.gridCount_frame.grid(row=1,column=1,padx=10,pady=10)
 
+        # grid type option menu
+        options = ["Solid","Intersection","Dashed"]
+        self.gridTypeOptionMenu_frame, self.gridTypeOptionMenu = self.makeOptionMenuField(input_frame, "Grid Type", self.gridType, options)
+        self.gridTypeOptionMenu_frame.grid(row=1, column=2, padx=10, pady=10)
+
+        # grid color selector button
+        self.colorSelectorButton = tk.Button(master=input_frame, text="Grid Color", command=self.getGridColor)
+        self.colorSelectorButton.grid(row=2, column=2, padx=10, pady=10)
+
+        # ignore partial cutouts checkbox
+        self.ignorePartialCutouts_check_button = tk.Checkbutton(master=input_frame, text='Ignore Partial Cutouts', variable=self.ignorePartialCutouts, onvalue=1, offvalue=0)
+        self.ignorePartialCutouts_check_button.grid(row=3, column=2, padx=10, pady=10)
+
         # scale factor entry
-        self.scaleFactor_frame, self.scaleFactor_entry = self.makeEntryField(top, 'Scale Factor',self.scaleFactor)
+        self.scaleFactor_frame, self.scaleFactor_entry = self.makeEntryField(input_frame, 'Scale Factor',self.scaleFactor)
         self.scaleFactor_entry.config(width=15)
         self.scaleFactor_frame.grid(row=2, column=0,padx=10,pady=10)
 
         # FOV entry
-        self.FOV_frame, self.FOV_entry = self.makeEntryField(top, 'FOV (arcseconds)', self.FOV)
+        self.FOV_frame, self.FOV_entry = self.makeEntryField(input_frame, 'FOV (arcseconds)', self.FOV)
         self.FOV_entry.config(width=15)
         self.FOV_frame.grid(row=3, column=0,padx=10,pady=10)
         
         
-        self.minBright_frame, self.minBright_entry = self.makeEntryField(top, 'Minbright (Vega nmags)', self.minBright)
+        self.minBright_frame, self.minBright_entry = self.makeEntryField(input_frame, 'Minbright (Vega nmags)', self.minBright)
         self.minBright_entry.config(width=15)
         self.minBright_frame.grid(row=2, column=1,padx=10,pady=10)
         
-        self.maxBright_frame, self.maxBright_entry = self.makeEntryField(top, 'Maxbright (Vega nmags)', self.maxBright)
+        self.maxBright_frame, self.maxBright_entry = self.makeEntryField(input_frame, 'Maxbright (Vega nmags)', self.maxBright)
         self.maxBright_entry.config(width=15)
         self.maxBright_frame.grid(row=3, column=1,padx=10,pady=10)
+
+    def getGridColor(self):
+        color_representations = askcolor(title="Choose a grid color", initialcolor=self.gridColor)
+        if(color_representations == (None,None)):
+            return
+        else:
+            RGB_color, hex_color = color_representations
+            self.gridColor = RGB_color
 
     def overwriteManifestButtonPressed(self, value, popup):
         self.overwriteManifest.set(value)
@@ -520,7 +551,7 @@ class UserInterface:
 
          Returns
          -------
-         True -- not enough fields filled out
+         True -- not enough fields filled out or filled out correctly
          False -- No error, proceed
 
          '''
@@ -611,13 +642,15 @@ class UserInterface:
                 now = datetime.now()
                 self.updateConsole(f"Started pipeline at: {now}")
             
-            metadata_dict = {f"{Data.Metadata.privatization_symbol}GRID": int(self.addGrid.get()),
+            metadata_dict = {f"{Data.Metadata.privatization_symbol}ADDGRID": int(self.addGrid.get()),
                              f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(),
                              "FOV": self.FOV.get(),
                              f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY": self.pngDirectory.get(),
                              f"{Data.Metadata.privatization_symbol}MINBRIGHT": int(self.minBright.get()),
                              f"{Data.Metadata.privatization_symbol}MAXBRIGHT": int(self.maxBright.get()),
-                             f"{Data.Metadata.privatization_symbol}GRIDCOUNT": int(self.gridCount.get())}
+                             f"{Data.Metadata.privatization_symbol}GRIDCOUNT": int(self.gridCount.get()),
+                             f"{Data.Metadata.privatization_symbol}GRIDTYPE": self.gridType.get(),
+                             f"{Data.Metadata.privatization_symbol}GRIDCOLOR": str(self.gridColor)}
 
             # Creates metadata-target.csv
             ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
@@ -689,6 +722,34 @@ class UserInterface:
         
         return frame, entry
 
+    def makeOptionMenuField(self, window, label_title, variable, options_list):
+        '''
+        Generates a new frame with label and option menu field.
+
+        Parameters
+        ----------
+        label_title : string
+            The title for the frame, displayed above the text entry.
+
+        Returns
+        -------
+        frame : tkinter Frame object
+            Contains Option menu and Label widget
+        entry : tkinter OptionMenu widget
+            Option menu field
+        '''
+
+        frame = tk.Frame(master=window)
+
+        option_menu = tk.OptionMenu(frame, variable, *options_list)
+
+        label = tk.Label(master=frame, text=label_title)
+
+        label.grid(row=0, column=0)
+        option_menu.grid(row=1, column=0)
+
+        return frame, option_menu
+
 class Session():
 
     def __init__(self, UI):
@@ -712,6 +773,8 @@ class Session():
         self.minBright = copy(UI.minBright.get())
         self.maxBright = copy(UI.maxBright.get())
         self.gridCount = copy(UI.gridCount.get())
+        self.gridColor = copy(UI.gridColor)
+        self.ignorePartialCutouts = copy(UI.ignorePartialCutouts.get())
 
     def setUIVariables(self, UI):
         UI.state.set(copy(self.state))
@@ -731,6 +794,8 @@ class Session():
         UI.minBright.set(copy(self.minBright))
         UI.maxBright.set(copy(self.maxBright))
         UI.gridCount.set(copy(self.gridCount))
+        UI.gridColor = copy(self.gridColor)
+        UI.ignorePartialCutouts.set(copy(self.ignorePartialCutouts))
 
     def save(self,UI):
         self.saveUIVariables(UI)
