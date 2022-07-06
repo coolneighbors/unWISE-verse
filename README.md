@@ -21,6 +21,7 @@ ZPipe allows a user to quickly download a large set of target data from the Wise
 ### Installing
 * Dowload python packages as nescessary (recommended to use pip install or similar)
 ``` 
+pip install
 panoptes-client
 Pillow
 requests
