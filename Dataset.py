@@ -234,12 +234,11 @@ class Zooniverse_Dataset(Dataset):
 
                 # Save all images for parameter set, add grid if toggled for that image
 
-                flist = wise_view_query.downloadWiseViewData("pngs")
+                flist, size_list = wise_view_query.downloadWiseViewData("pngs")
 
                 is_partial_cutout = False
-                for filename in flist:
-                    image = PIL.Image.open(filename)
-                    width, height = image.size
+                for size in size_list:
+                    width, height = size
                     if (width != height):
                         is_partial_cutout = True
                         break
@@ -332,7 +331,10 @@ class CN_Dataset(Zooniverse_Dataset):
 
         sub_directory_limit = 9999
         sub_directory_threshold = 1000
-        
+
+        if(UI is not None):
+            ignore_partial_cutouts = UI.ignorePartialCutouts.get()
+
         # Currently is only able to use CSV files
         total_data_rows = 0
         with open(dataset_filename, newline='') as dataset_file:
@@ -348,12 +350,17 @@ class CN_Dataset(Zooniverse_Dataset):
                 RA = float(row['RA'])
                 DEC = float(row['DEC'])
                 PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
-                GRID = int(row[f'{Metadata.privatization_symbol}GRID'])
+                ADDGRID = int(row[f'{Metadata.privatization_symbol}ADDGRID'])
                 GRIDCOUNT= int(row[f'{Metadata.privatization_symbol}GRIDCOUNT'])
-                SCALE = row[f'{Metadata.privatization_symbol}SCALE']
+                SCALE = int(row[f'{Metadata.privatization_symbol}SCALE'])
                 FOV = float(row['FOV'])
                 MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
                 MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+                GRIDTYPE = row[f'{Metadata.privatization_symbol}GRIDTYPE']
+                RGB_list = []
+                for s in row[f'{Metadata.privatization_symbol}GRIDCOLOR'][1:][:-1].split(","):
+                    RGB_list.append(int(s))
+                GRIDCOLOR = tuple(RGB_list)
 
                 if(count == 0):
                     sub_directory_values = []
@@ -375,18 +382,11 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 # pixel side-length of the images
                 SIZE = int(FOV / unWISE_pixel_ratio)
-
-                # scale factor of modified images
-                if SCALE != '':
-                    SCALE = int(SCALE)
-                else:
-                    SCALE = 1
-
                 # parse GRID into boolean values, only accept 1 as True, otherwise GRID is False.
-                if (GRID == 1):
-                    GRID = True
+                if (ADDGRID == 1):
+                    ADDGRID = True
                 else:
-                    GRID = False
+                    ADDGRID = False
 
                 # set WV parameters to RA and DEC
                 wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT)
@@ -413,6 +413,7 @@ class CN_Dataset(Zooniverse_Dataset):
                             date_str = date_str + f"Frame {i+1}: {round(mean([time_start,time_end]),2)}, "
                         else:
                             date_str = date_str + f"Frame {i+1}: {round(mean([time_start,time_end]),2)}"
+
                 row["Decimal Year Epochs"] = date_str
 
                 ICRS_coordinates = SkyCoord(ra=RA*u.degree, dec=DEC*u.degree, frame='icrs')
@@ -450,23 +451,23 @@ class CN_Dataset(Zooniverse_Dataset):
                     png_count = 0
 
                 # Save all images for parameter set, add grid if toggled for that image
-                flist = wise_view_query.downloadWiseViewData(PNG_DIRECTORY + "\\" + sub_directory, scale_factor=SCALE, addGrid=GRID, gridCount=GRIDCOUNT)
+                flist, size_list = wise_view_query.downloadWiseViewData(PNG_DIRECTORY + "\\" + sub_directory, scale_factor=SCALE, addGrid=ADDGRID, gridCount=GRIDCOUNT, gridType=GRIDTYPE, gridColor=GRIDCOLOR)
                 png_count += len(flist)
 
                 is_partial_cutout = False
-                for filename in flist:
-                    image = PIL.Image.open(filename)
-                    width, height = image.size
+                for size in size_list:
+                    width, height = size
                     if (width != height):
                         is_partial_cutout = True
                         break
+
 
                 if (display_printouts):
                     if (is_partial_cutout and ignore_partial_cutouts):
                         if (UI is None):
                             print(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                         elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
+                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a\npartial cutout and has been ignored.")
                     else:
                         if (UI is None):
                             print(f"Row {count} out of {total_data_rows} has been downloaded.")
