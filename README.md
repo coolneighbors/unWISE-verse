@@ -19,16 +19,15 @@ ZPipe allows a user to quickly download a large set of target data from the Wise
 	* tkinter
 	* datetime
 ### Installing
-* Dowload python packages as nescessary (recommended to use pip or similar)
-```
-pip install panoptes-client
-		Pillow
-		requests
-		csv
-		git+https://github.com/coolneighbors/flipbooks.git
-		tk
-        python-magic-bin
-
+* Dowload python packages as nescessary (recommended to use pip install or similar)
+``` 
+panoptes-client
+Pillow
+requests
+csv
+git+https://github.com/coolneighbors/flipbooks.git
+tk
+python-magic-bin
 ```
 * Clone into git repository at github.com/coolneighbors/ZPipe
 ```
