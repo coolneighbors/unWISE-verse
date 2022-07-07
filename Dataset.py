@@ -14,7 +14,6 @@ import astropy
 from astropy import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-import PIL
 from flipbooks import WiseViewQuery
 import MetadataPointers
 
@@ -377,11 +376,8 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 count += 1
 
-                # arc-seconds per pixel
-                unWISE_pixel_ratio = 2.75
-
                 # pixel side-length of the images
-                SIZE = int(FOV / unWISE_pixel_ratio)
+                SIZE = WiseViewQuery.WiseViewQuery.FOVToPixelSize(FOV)
                 # parse GRID into boolean values, only accept 1 as True, otherwise GRID is False.
                 if (ADDGRID == 1):
                     ADDGRID = True
@@ -394,7 +390,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 # Set generated metadata
                 row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
                 row['Data Source'] = f"[unWISE](+tab+http://unwise.me/)"
-                row['unWISE Pixel Scale'] = f"~{unWISE_pixel_ratio} arcseconds per pixel"
+                row['unWISE Pixel Scale'] = f"~{WiseViewQuery.unWISE_pixel_ratio} arcseconds per pixel"
                 modified_julian_date_pairs = wise_view_query.requestMetadata("mjds")
                 date_str = ""
                 for i in range(len(modified_julian_date_pairs)):
