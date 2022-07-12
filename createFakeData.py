@@ -29,7 +29,7 @@ def main():
         print("Starting to write data")
         for i in range(numOfTargets):
         # write a row to the csv file
-            writer.writerow([str(randRAs[i]),str(randDECs[i])])
+            writer.writerow([str(randRAs[i]), str(randDECs[i])])
     
     print('Done')
     

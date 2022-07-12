@@ -488,7 +488,7 @@ class CN_Dataset(Zooniverse_Dataset):
                         if (UI is None):
                             print(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                         elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a\npartial cutout and has been ignored.")
+                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                     else:
                         if (UI is None):
                             print(f"Row {count} out of {total_data_rows} has been downloaded.")
