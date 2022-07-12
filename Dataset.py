@@ -461,7 +461,6 @@ class CN_Dataset(Zooniverse_Dataset):
                 row_metadata = list(row.values())
                 metadata_field_names = list(row.keys())
 
-
                 if (png_count >= sub_directory_threshold):
                     sub_directory = str(int(sub_directory) + 1)
                     if (int(sub_directory) + 1 > sub_directory_limit):
@@ -481,7 +480,6 @@ class CN_Dataset(Zooniverse_Dataset):
                     if (width != height):
                         is_partial_cutout = True
                         break
-
 
                 if (display_printouts):
                     if (is_partial_cutout and ignore_partial_cutouts):
