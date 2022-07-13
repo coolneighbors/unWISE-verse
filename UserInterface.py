@@ -559,8 +559,7 @@ class UserInterface:
         self.FOV_frame, self.FOV_entry = self.makeEntryField(input_frame, 'FOV (arcseconds)', self.FOV, self.background_color_hex)
         self.FOV_entry.config(width=15)
         self.FOV_frame.grid(row=3, column=0,padx=10,pady=10)
-        
-        
+
         self.minBright_frame, self.minBright_entry = self.makeEntryField(input_frame, 'Minbright (Vega nmags)', self.minBright, self.background_color_hex)
         self.minBright_entry.config(width=15)
         self.minBright_frame.grid(row=2, column=1,padx=10,pady=10)
@@ -610,19 +609,9 @@ class UserInterface:
                 warningFlag = 7
 
         try:
-            int(self.minBright.get())
-        except ValueError:
-            warningFlag=8
-       
-        try:
-            int(self.maxBright.get())
-        except ValueError:
-            warningFlag=9
-
-        try:
             int(self.gridCount.get())
         except ValueError:
-            warningFlag=10
+            warningFlag=8
 
         if self.state.get() == '':
             warningFlag=1
@@ -643,10 +632,6 @@ class UserInterface:
         elif warningFlag==7:
             whatToSay='Input a valid directory!'
         elif warningFlag==8:
-            whatToSay='Input a numerical value for minbright!'
-        elif warningFlag==9:
-            whatToSay='Input a numerical value for maxbright!'
-        elif warningFlag==10:
             whatToSay='Input a numerical value for grid count!'
         else:
             return False
@@ -677,13 +662,12 @@ class UserInterface:
             if(self.printProgress.get()):
                 now = datetime.now()
                 self.updateConsole(f"Started pipeline at: {now}")
-            
             metadata_dict = {f"{Data.Metadata.privatization_symbol}ADDGRID": int(self.addGrid.get()),
                              f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(),
                              "FOV": self.FOV.get(),
                              f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY": self.pngDirectory.get(),
-                             f"{Data.Metadata.privatization_symbol}MINBRIGHT": int(self.minBright.get()),
-                             f"{Data.Metadata.privatization_symbol}MAXBRIGHT": int(self.maxBright.get()),
+                             f"{Data.Metadata.privatization_symbol}MINBRIGHT": self.minBright.get(),
+                             f"{Data.Metadata.privatization_symbol}MAXBRIGHT": self.maxBright.get(),
                              f"{Data.Metadata.privatization_symbol}GRIDCOUNT": int(self.gridCount.get()),
                              f"{Data.Metadata.privatization_symbol}GRIDTYPE": self.gridType.get(),
                              f"{Data.Metadata.privatization_symbol}GRIDCOLOR": str(self.gridColor)}

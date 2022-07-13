@@ -11,6 +11,8 @@ from panoptes_client import Panoptes
 
 import Spout
 import Login
+from Data import Metadata
+
 
 class NonUniqueFieldsError(Exception):
     def __init__(self, field_names):
@@ -122,7 +124,7 @@ def publishToZooniverse(UI):
         UI.updateConsole(f"Pipeline ended at: {now}")
         UI.updateConsole("---------------------------------")
 
-def mergeTargetsAndMetadata(targets_filename,metadata_dict, metadata_targets_filename):
+def mergeTargetsAndMetadata(targets_filename, metadata_dict, metadata_targets_filename):
     targets_dict_list = []
     with open(targets_filename, newline='') as targets_file:
         reader = csv.DictReader(targets_file)
@@ -134,12 +136,34 @@ def mergeTargetsAndMetadata(targets_filename,metadata_dict, metadata_targets_fil
     metadata_field_names = list(metadata_dict.keys())
 
     metadata_targets_field_names = [*targets_field_names,*metadata_field_names]
+    # If these field names are in the targets file, it will override any assigned values by the UI
+    allowed_duplicate_field_names = [f'{Metadata.privatization_symbol}MINBRIGHT',f'{Metadata.privatization_symbol}MAXBRIGHT']
+
     if(len(set(metadata_targets_field_names)) != len(metadata_targets_field_names)):
-        raise NonUniqueFieldsError(metadata_targets_field_names)
+        for allowed_duplicate_field_name in allowed_duplicate_field_names:
+            if(metadata_targets_field_names.count(allowed_duplicate_field_name) > 2):
+                raise NonUniqueFieldsError(metadata_targets_field_names)
+
+    allowed_duplicates_removed_field_names = [field_name for field_name in metadata_targets_field_names if field_name not in allowed_duplicate_field_names]
+    if(len(set(allowed_duplicates_removed_field_names)) != len(allowed_duplicates_removed_field_names)):
+        raise NonUniqueFieldsError(allowed_duplicates_removed_field_names)
 
     metadata_targets_dict_list = []
     for targets_dict in targets_dict_list:
         metadata_targets_dict_list.append(targets_dict | metadata_dict)
+        if(metadata_dict[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
+            try:
+                if(targets_dict[f'{Metadata.privatization_symbol}MINBRIGHT'] != ""):
+                    metadata_targets_dict_list[-1][f'{Metadata.privatization_symbol}MINBRIGHT'] = targets_dict[f'{Metadata.privatization_symbol}MINBRIGHT']
+            except KeyError:
+                pass
+
+        if(metadata_dict[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+            try:
+                if(targets_dict[f'{Metadata.privatization_symbol}MAXBRIGHT'] != ""):
+                    metadata_targets_dict_list[-1][f'{Metadata.privatization_symbol}MAXBRIGHT'] = targets_dict[f'{Metadata.privatization_symbol}MAXBRIGHT']
+            except KeyError:
+                pass
 
     with open(metadata_targets_filename,"w", newline='') as metadata_targets_file:
         writer = csv.DictWriter(metadata_targets_file, metadata_targets_field_names)

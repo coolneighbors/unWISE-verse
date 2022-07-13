@@ -14,7 +14,7 @@ import astropy
 from astropy import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from flipbooks import WiseViewQuery
+from flipbooks import WiseViewQuery, unWISEQuery
 import MetadataPointers
 
 from Data import Data, Metadata
@@ -353,8 +353,8 @@ class CN_Dataset(Zooniverse_Dataset):
                 GRIDCOUNT= int(row[f'{Metadata.privatization_symbol}GRIDCOUNT'])
                 SCALE = int(row[f'{Metadata.privatization_symbol}SCALE'])
                 FOV = float(row['FOV'])
-                MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
-                MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+
+
                 GRIDTYPE = row[f'{Metadata.privatization_symbol}GRIDTYPE']
                 RGB_list = []
                 for s in row[f'{Metadata.privatization_symbol}GRIDCOLOR'][1:][:-1].split(","):
@@ -378,6 +378,32 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 # pixel side-length of the images
                 SIZE = WiseViewQuery.WiseViewQuery.FOVToPixelSize(FOV)
+
+                MINBRIGHT = None
+                MAXBRIGHT = None
+
+                if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == "" or row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+
+                    unWISE_query = unWISEQuery.unWISEQuery(ra=RA, dec=DEC, size=SIZE, bands=12)
+                    brightness_clip = unWISE_query.calculateBrightnessClip(mode="percentile", percentile=97.5)
+                    if(row[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
+                        MINBRIGHT = brightness_clip[0]
+                    else:
+                        MINBRIGHT = float(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
+                    if(row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+                        MAXBRIGHT = brightness_clip[1]
+                    else:
+                        MAXBRIGHT = float(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+                else:
+                    MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
+                    MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+
+                if(MAXBRIGHT < MINBRIGHT):
+                    raise ValueError(f"MAXBRIGHT ({MAXBRIGHT}) is less than MINBRIGHT ({MINBRIGHT})")
+
+                row[f'{Metadata.privatization_symbol}MINBRIGHT'] = MINBRIGHT
+                row[f'{Metadata.privatization_symbol}MAXBRIGHT'] = MAXBRIGHT
+
                 # parse GRID into boolean values, only accept 1 as True, otherwise GRID is False.
                 if (ADDGRID == 1):
                     ADDGRID = True
@@ -385,12 +411,12 @@ class CN_Dataset(Zooniverse_Dataset):
                     ADDGRID = False
 
                 # set WV parameters to RA and DEC
-                wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT)
+                wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT, window = 1.5)
 
                 # Set generated metadata
                 row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
                 row['Data Source'] = f"[unWISE](+tab+http://unwise.me/)"
-                row['unWISE Pixel Scale'] = f"~{WiseViewQuery.unWISE_pixel_ratio} arcseconds per pixel"
+                row['unWISE Pixel Scale'] = f"~{WiseViewQuery.unWISE_pixel_scale} arcseconds per pixel"
                 modified_julian_date_pairs = wise_view_query.requestMetadata("mjds")
                 date_str = ""
                 for i in range(len(modified_julian_date_pairs)):
@@ -436,7 +462,6 @@ class CN_Dataset(Zooniverse_Dataset):
                 row_metadata = list(row.values())
                 metadata_field_names = list(row.keys())
 
-
                 if (png_count >= sub_directory_threshold):
                     sub_directory = str(int(sub_directory) + 1)
                     if (int(sub_directory) + 1 > sub_directory_limit):
@@ -457,13 +482,12 @@ class CN_Dataset(Zooniverse_Dataset):
                         is_partial_cutout = True
                         break
 
-
                 if (display_printouts):
                     if (is_partial_cutout and ignore_partial_cutouts):
                         if (UI is None):
                             print(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                         elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a\npartial cutout and has been ignored.")
+                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                     else:
                         if (UI is None):
                             print(f"Row {count} out of {total_data_rows} has been downloaded.")
