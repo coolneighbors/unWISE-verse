@@ -383,6 +383,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 MAXBRIGHT = None
 
                 if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == "" or row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+
                     unWISE_query = unWISEQuery.unWISEQuery(ra=RA, dec=DEC, size=SIZE, bands=12)
                     brightness_clip = unWISE_query.calculateBrightnessClip(mode="percentile", percentile=97.5)
                     if(row[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
@@ -410,7 +411,7 @@ class CN_Dataset(Zooniverse_Dataset):
                     ADDGRID = False
 
                 # set WV parameters to RA and DEC
-                wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT)
+                wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT, window = 1.5)
 
                 # Set generated metadata
                 row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
