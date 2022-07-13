@@ -7,6 +7,7 @@ Refactored on Tuesday, June 7th
 """
 
 import csv
+import time
 from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
 from Manifest import Manifest, Defined_Manifest
@@ -458,6 +459,10 @@ class Spout:
         """
 
         self.generate_manifest(manifest_filename, dataset_filename, overwrite_automatically, enable_strict_manifest)
+
+        # This allows the PNG modifications to catch up before it uploads to Zooniverse
+        time.sleep(3)
+
         subject_data_dicts = self.generate_subject_data_dicts(manifest_filename)
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
