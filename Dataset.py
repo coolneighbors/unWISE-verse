@@ -9,6 +9,8 @@ import math
 import os
 from copy import copy
 from statistics import mean
+import warnings
+import platform
 
 import astropy
 from astropy import time
@@ -16,6 +18,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from flipbooks import WiseViewQuery, unWISEQuery
 import MetadataPointers
+
 
 from Data import Data, Metadata
 
@@ -343,6 +346,8 @@ class CN_Dataset(Zooniverse_Dataset):
             reader = csv.DictReader(dataset_file)
             count = 0
             png_count = 0
+            given_file_warning = False
+            given_directory_warning = False
 
             for row in reader:
                 # Get metadata
@@ -363,8 +368,37 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 if(count == 0):
                     sub_directory_values = []
-                    for sub_directory_name in os.listdir(PNG_DIRECTORY):
-                        sub_directory_values.append(int(sub_directory_name))
+                    directories = [name for name in os.listdir(PNG_DIRECTORY) if os.path.isdir(os.path.join(PNG_DIRECTORY, name))]
+                    if(not given_file_warning):
+                        file_list = [x for x in os.listdir(PNG_DIRECTORY) if x not in directories]
+                        if (platform.system() == "Darwin" and ".DS_Store" in file_list):
+                            file_list.remove(".DS_Store")
+                        if (len(file_list) != 0):
+                            if(len(file_list) == 1):
+                                if (UI is None):
+                                    warnings.warn(f"The following file was found in {PNG_DIRECTORY} and does not belong: {', '.join(file_list)}")
+                                elif (isinstance(UI, UserInterface.UserInterface)):
+                                    UI.updateConsole(f"Warning: The following file was found in {PNG_DIRECTORY} and does not belong: {', '.join(file_list)}")
+                            else:
+                                if (UI is None):
+                                    warnings.warn(f"The following files were found in {PNG_DIRECTORY} and do not belong: {', '.join(file_list)}")
+                                elif (isinstance(UI, UserInterface.UserInterface)):
+                                    UI.updateConsole(f"Warning: The following files were found in {PNG_DIRECTORY} and do not belong: {', '.join(file_list)}")
+                            given_file_warning = True
+
+                    for sub_directory_name in directories:
+                        try:
+                            sub_directory_values.append(int(sub_directory_name))
+                        except ValueError:
+                            sub_directory_name_form = ""
+                            for c in str(sub_directory_limit):
+                                sub_directory_name_form += "0"
+                            if (not given_directory_warning):
+                                if (UI is None):
+                                    warnings.warn(f"Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}")
+                                elif (isinstance(UI, UserInterface.UserInterface)):
+                                    UI.updateConsole(f"Warning: Sub-directory name '{sub_directory_name}' is not of the form: {sub_directory_name_form}")
+                                given_directory_warning = True
                     max_value = max(sub_directory_values, default=-1)
                     max_value = max_value + 1
                     if(max_value > sub_directory_limit):
