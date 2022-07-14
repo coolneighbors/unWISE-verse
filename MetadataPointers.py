@@ -1,7 +1,7 @@
 
 def generate_legacy_survey_url(RA, DEC, zoom = 14):
-    legacy_survey_template_url = "https://www.legacysurvey.org/viewer?ra={}&dec={}&layer=unwise-neo6&zoom={}"
-    return legacy_survey_template_url.format(RA,DEC,zoom)
+    legacy_survey_template_url = "https://www.legacysurvey.org/viewer?ra={}&dec={}&layer=unwise-neo6&zoom={}&mark={},{}"
+    return legacy_survey_template_url.format(RA,DEC,zoom,RA,DEC)
 
 def generate_SIMBAD_url(RA, DEC, radius = 60):
     SIMBAD_template_url = "http://simbad.u-strasbg.fr/simbad/sim-coo?Coord={}+{}&Radius={}&Radius.unit=arcsec"
