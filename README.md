@@ -30,7 +30,7 @@ git+https://github.com/coolneighbors/flipbooks.git
 tk
 python-magic-bin
 ```
-* Clone into git repository at github.com/coolneighbors/ZPipe
+* Clone into git repository at github.com/coolneighbors/unWISE-verse
 ```
 git clone http://github.com/coolneighbors/ZPipe
 ```
