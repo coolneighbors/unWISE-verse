@@ -1,8 +1,8 @@
-# ZPipe
+# unWISE-verse
 
 An integrated unWISE data collection and Zooniverse upload pipeline using the Panoptes-Client
 ## Description
-ZPipe allows a user to quickly download a large set of target data from the WiseView server and upload the data to a Zooniverse subject set. In addition, users have the option to just download data without uploading, or uploading an existing set set of target png's. 
+unWISE-verse allows a user to quickly download a large set of target data from the WiseView server and upload the data to a Zooniverse subject set. In addition, users have the option to just download data without uploading, or uploading an existing set set of target png's. 
 ## Getting Started
 ### Dependencies
 * Valid Zooniverse login credentials, contributor access to an existing project. 
@@ -36,7 +36,7 @@ git clone http://github.com/coolneighbors/unWISE-verse
 ```
 
 ### Executing program
-* ZPipe allows the user to download and upload, just download, or just upload targets to a subject set in Zooniverse
+* unWISE-verse allows the user to download and upload, just download, or just upload targets to a subject set in Zooniverse
 
 * If you intend to download data from the unWISE catologue, this program requires a list of targets.
 	* The targets should be provided in a csv file as follows:
@@ -52,7 +52,7 @@ ra_3,dec_3,metadata3
 ra_n,dec_n,metadataN
 ```
 
-* Navigate to FullPipeline directory, and in cmd/powershell enter the command
+* Navigate to unWISE-verse directory, and in cmd/powershell enter the command
 ```
 python main.py
 ```
@@ -63,13 +63,16 @@ Enter the required fields for zooniverse and or file information.
 
 You can change the size, FOV, post processing effects, and image parameters by changing options under the "metadata" option. 
 
+* The minbright and maxbright fields specify the exposure limits of WiseView downloads. By default, they are set to values that previous testing has determined provides a consistently accurate discovery rate for low luminosity brown dwarfs. 
+* Change the minbright and maxbright of the image by changing the values in these respective fields. Minbright sets all pixel values below a set luminosity (in vega nmags) to black, while maxbright sets all pixel values above a set luminosity (in vega nmags). Pixel values in between these min/maxbright parameters are assigned to a gray value by a linear stretch between the min and maxbright parameters. 
+* Deleting these values and leaving the fields blank will enable dynamic minbright and maxbright selection. This selects individual mingbright and maxbright parameters for each subect by a statistical cutoff at 5% and 95% the raw WiseView flux. Enabling this mode may slightly increase program runtimes. 
+
 * If you would like to rescale the image, click the metadata button and input an integer scaling factor (default is 1)
 
-* If you would like to add a grid to the image, click the metadata button and select "Grid"
+* If you would like to add a grid to the image, click the metadata button and select "Grid". The NxN number of grid squares is determined by the grid size parameter. The color of the grid is determined using the grid color selector (default is dark red).
 
 * Change the FOV of the image by modifying the FOV field (integer inputs only)
 
-* Change the minbright and maxbright of the image by changing the values in these respective fields. Minbright sets all pixel values below a set luminosity (in vega nmags) to black, while maxbright sets all pixel values above a set luminosity (in vega nmags). Pixel values in between these min/maxbright parameters are assigned to a gray value by a linear stretch between the min and maxbright parameters. 
 
 Select "Print progress" to view program progess. Do not change this selection after hitting submit and before program has completed. 
 
@@ -77,19 +80,7 @@ When all selections have been made and fields are entered, hit "Submit"
 
 ## Notes
 
-ZPipe uses a semi-modular metadata system. In order to add another line of metadata to the subject set, add a ![metadata] column to the second row of master_header.txt
-Failure to do so will result in an error message.
-
-You can turn off cross-checking with a master_header.txt file by changing the enable_strict_manifest field in the generate_manifest function of spout.py to false. This is not recommended.
-
-The master_header.txt file has the following format:
-
-*Assuming a delimiter of " "*
-```
-DataFieldName1 DataFieldName2 DataFieldName3 ...
-MetadataFieldName1 MetadataFieldName2 MetadataFieldName3 ...
-```
-The number of data field names and metadata field names does **not** need to match.
+unWISE-verse uses a semi-modular metadata system. In addition to the programatic metadata thats automatically populated in the manivest via the metadata tab, you can specify unique metadata for each targets like notes, ID's etc. In order to add another line of metadata to the subject set, add an additional column in the targets list with a header and appropriate privacy symbol (see: Executing Program).
 
 ## Help
 
@@ -104,8 +95,6 @@ For
  [manifest]  : Only target filename and manifest filename field are required.
  [upload] : Only username, password, project ID, subject set ID, and manifest filename are required
  [full] : All fields are required.
-
-
 
 ## Authors
 [Noah Schapera](https://www.linkedin.com/in/noah-schapera-86303a1b9/)
@@ -129,6 +118,18 @@ For
 	    Multiprocessing - significantly speeds up image download time by using multiple threads at once. 
 	Refactored: flipbooks -- Transfered wv.py and related scripts to flipbooks repo. Created python package from that repo. 
 	To Do: Compatability with FITS files. Make UI run throghout program rather than only at the start. Add more options for metadata.
+    
+1.0  -- Initial Release
+    
+    Fixed UI shutdown after program start, added metadata options for grid color, size. Added dynamic minbright/maxbright parameter selection.
+    
+    Updated UI color for more contrast
+    
+    Refactored back-end dataset creation. No longer dependent on a master header list and can be used with any set of additional metadata.
+    
+    Hashed wiseview / simbad / vizer links into subect metadata
+    
+    Renamed repo to unWISE-verse
 	
 ## License
 
