@@ -78,9 +78,6 @@ Select "Print progress" to view program progess. Do not change this selection af
 
 When all selections have been made and fields are entered, hit "Submit"
 
-## Notes
-
-unWISE-verse uses a semi-modular metadata system. In addition to the programatic metadata thats automatically populated in the manivest via the metadata tab, you can specify unique metadata for each targets like notes, ID's etc. In order to add another line of metadata to the subject set, add an additional column in the targets list with a header and appropriate privacy symbol (see: Executing Program).
 
 ## Help
 
@@ -129,6 +126,8 @@ For
     
     Hashed wiseview / simbad / vizer links into subect metadata
     
+    Updated readme with recent changes
+    
     Renamed repo to unWISE-verse
 	
 ## License
@@ -141,5 +140,4 @@ This pipeline is built on the WiseView platform.
 Caselden D., Westin P. I, Meisner A., Kuchner M. and Colin G. 2018 WiseView: Visualizing Motion and Variability of Faint WISE Sources, Astrophysics Source Code Library ascl: 1806.004
 
 * [panoptes-python-client](https://github.com/zooniverse/panoptes-python-client)
-* [tkinter tutorial](https://realpython.com/python-gui-tkinter/)
-* [multiprocessing tutorial](https://tutorialedge.net/python/python-multiprocessing-tutorial/)
+
