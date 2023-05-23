@@ -468,34 +468,14 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 count += 1
 
-                SIZE = WiseViewQuery.WiseViewQuery.FOVToPixelSize(FOV)
+                wise_view_query = wise_view_queries[count - 1]
 
-                MINBRIGHT = None
-                MAXBRIGHT = None
-
-                if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == "" or row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
-
-                    unWISE_query = unWISEQuery.unWISEQuery(ra=RA, dec=DEC, size=SIZE, bands=12)
-                    brightness_clip = unWISE_query.calculateBrightnessClip(mode="percentile", percentile=97.5)
-                    if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
-                        MINBRIGHT = brightness_clip[0]
-                    else:
-                        MINBRIGHT = float(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
-                    if (row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
-                        MAXBRIGHT = brightness_clip[1]
-                    else:
-                        MAXBRIGHT = float(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
-                else:
-                    MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
-                    MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
-
-                if (MAXBRIGHT < MINBRIGHT):
-                    raise ValueError(f"MAXBRIGHT ({MAXBRIGHT}) is less than MINBRIGHT ({MINBRIGHT})")
+                MINBRIGHT = wise_view_query.wise_view_parameters["minbright"]
+                MAXBRIGHT = wise_view_query.wise_view_parameters["maxbright"]
 
                 row[f'{Metadata.privatization_symbol}MINBRIGHT'] = MINBRIGHT
                 row[f'{Metadata.privatization_symbol}MAXBRIGHT'] = MAXBRIGHT
 
-                wise_view_query = wise_view_queries[count-1]
 
                 # Set generated metadata
                 row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
