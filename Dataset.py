@@ -356,9 +356,6 @@ class CN_Dataset(Zooniverse_Dataset):
         if (MAXBRIGHT < MINBRIGHT):
             raise ValueError(f"MAXBRIGHT ({MAXBRIGHT}) is less than MINBRIGHT ({MINBRIGHT})")
 
-        row[f'{Metadata.privatization_symbol}MINBRIGHT'] = MINBRIGHT
-        row[f'{Metadata.privatization_symbol}MAXBRIGHT'] = MAXBRIGHT
-
         # set WV parameters to RA and DEC
         wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT, window=1.5)
         return wise_view_query
