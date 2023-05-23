@@ -16,6 +16,7 @@ import astropy
 from astropy import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+import multiprocessing as mp
 from flipbooks import WiseViewQuery, unWISEQuery
 import MetadataPointers
 
@@ -324,6 +325,44 @@ class CN_Dataset(Zooniverse_Dataset):
         """
         super(CN_Dataset, self).__init__(dataset_filename,ignore_partial_cutouts, require_uniform_fields, display_printouts, UI)
 
+    def generateRowWiseViewQuery(self, row):
+        RA = float(row['RA'])
+        DEC = float(row['DEC'])
+        FOV = float(row['FOV'])
+
+        # pixel side-length of the images
+        SIZE = WiseViewQuery.WiseViewQuery.FOVToPixelSize(FOV)
+
+        MINBRIGHT = None
+        MAXBRIGHT = None
+
+        if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == "" or row[
+            f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+
+            unWISE_query = unWISEQuery.unWISEQuery(ra=RA, dec=DEC, size=SIZE, bands=12)
+            brightness_clip = unWISE_query.calculateBrightnessClip(mode="percentile", percentile=97.5)
+            if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
+                MINBRIGHT = brightness_clip[0]
+            else:
+                MINBRIGHT = float(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
+            if (row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+                MAXBRIGHT = brightness_clip[1]
+            else:
+                MAXBRIGHT = float(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+        else:
+            MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
+            MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+
+        if (MAXBRIGHT < MINBRIGHT):
+            raise ValueError(f"MAXBRIGHT ({MAXBRIGHT}) is less than MINBRIGHT ({MINBRIGHT})")
+
+        row[f'{Metadata.privatization_symbol}MINBRIGHT'] = MINBRIGHT
+        row[f'{Metadata.privatization_symbol}MAXBRIGHT'] = MAXBRIGHT
+
+        # set WV parameters to RA and DEC
+        wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT, window=1.5)
+        return wise_view_query
+
     def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
         data_list = []
         metadata_list = []
@@ -344,12 +383,34 @@ class CN_Dataset(Zooniverse_Dataset):
 
         with open(dataset_filename, newline='') as dataset_file:
             reader = csv.DictReader(dataset_file)
+            rows = [row for row in reader]
             count = 0
             png_count = 0
             given_file_warning = False
             given_directory_warning = False
+            wise_view_queries = []
 
-            for row in reader:
+            # Asynchronously generate all of the WiseViewQuery objects
+            bunch_size = 25
+            # iterate through rows in bunches of bunch_size
+            pool = mp.Pool()
+            for i in range(0, len(rows), bunch_size):
+                if(i + bunch_size > len(rows)):
+                    bunch_size = len(rows) - i
+                if (UI is None):
+                    print(f"Generating WiseViewQueries for rows {i+1} to {i + bunch_size}")
+                elif (isinstance(UI, UserInterface.UserInterface)):
+                    UI.updateConsole(f"Generating WiseViewQueries for rows {i+1} to {i + bunch_size}")
+
+                # get the next bunch of rows
+                bunch = rows[i:i + bunch_size]
+                # create a pool of processes
+                processes = [pool.apply_async(self.generateRowWiseViewQuery, args=(row,)) for row in bunch]
+                bunch_wise_view_queries = [p.get() for p in processes]
+                wise_view_queries.extend(bunch_wise_view_queries)
+            pool.close()
+
+            for row in rows:
                 # Get metadata
                 RA = float(row['RA'])
                 DEC = float(row['DEC'])
@@ -410,7 +471,6 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 count += 1
 
-                # pixel side-length of the images
                 SIZE = WiseViewQuery.WiseViewQuery.FOVToPixelSize(FOV)
 
                 MINBRIGHT = None
@@ -420,11 +480,11 @@ class CN_Dataset(Zooniverse_Dataset):
 
                     unWISE_query = unWISEQuery.unWISEQuery(ra=RA, dec=DEC, size=SIZE, bands=12)
                     brightness_clip = unWISE_query.calculateBrightnessClip(mode="percentile", percentile=97.5)
-                    if(row[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
+                    if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
                         MINBRIGHT = brightness_clip[0]
                     else:
                         MINBRIGHT = float(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
-                    if(row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+                    if (row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
                         MAXBRIGHT = brightness_clip[1]
                     else:
                         MAXBRIGHT = float(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
@@ -432,20 +492,13 @@ class CN_Dataset(Zooniverse_Dataset):
                     MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
                     MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
 
-                if(MAXBRIGHT < MINBRIGHT):
+                if (MAXBRIGHT < MINBRIGHT):
                     raise ValueError(f"MAXBRIGHT ({MAXBRIGHT}) is less than MINBRIGHT ({MINBRIGHT})")
 
                 row[f'{Metadata.privatization_symbol}MINBRIGHT'] = MINBRIGHT
                 row[f'{Metadata.privatization_symbol}MAXBRIGHT'] = MAXBRIGHT
 
-                # parse GRID into boolean values, only accept 1 as True, otherwise GRID is False.
-                if (ADDGRID == 1):
-                    ADDGRID = True
-                else:
-                    ADDGRID = False
-
-                # set WV parameters to RA and DEC
-                wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT, window = 1.5)
+                wise_view_query = wise_view_queries[count-1]
 
                 # Set generated metadata
                 row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
