@@ -376,7 +376,7 @@ class CN_Dataset(Zooniverse_Dataset):
         wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT, window=1.5)
         return wise_view_query
 
-    def generateDataAndMetadata(self, row, index, png_count, sub_directory_path):
+    def generateDataAndMetadata(self, row, index, png_count, sub_directory_path, wise_view_queries):
         # Get metadata
         RA = float(row['RA'])
         DEC = float(row['DEC'])
@@ -393,7 +393,7 @@ class CN_Dataset(Zooniverse_Dataset):
         GRIDCOLOR = tuple(RGB_list)
 
         # Access the WiseViewQuery object for this row
-        wise_view_query = self.wise_view_queries[index]
+        wise_view_query = wise_view_queries[index]
 
         # Assign the metadata values to the row
         row[f'{Metadata.privatization_symbol}MINBRIGHT'] = wise_view_query.wise_view_parameters["minbright"]
@@ -475,125 +475,246 @@ class CN_Dataset(Zooniverse_Dataset):
         return data, metadata, png_count, is_partial_cutout
 
 
-    def saveState(self, dataset_filename, data_list, metadata_list, png_count, wise_view_queries):
+    def saveState(self, dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries):
+        # Create the save state file name based on the dataset filename
         save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
 
         # Save the data and metadata lists to a pickle file
         with open(save_state_filename, 'wb') as save_state_file:
-            pickle.dump([data_list, metadata_list, png_count, wise_view_queries], save_state_file)
+            pickle.dump([data_list, metadata_list, png_count, sub_directory, wise_view_queries], save_state_file)
 
     def loadState(self, dataset_filename):
+        # Create the save state file name based on the dataset filename
         save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
 
         # Load the data and metadata lists from a pickle file
         with open(save_state_filename, 'rb') as save_state_file:
-            data_list, metadata_list, png_count, wise_view_queries = pickle.load(save_state_file)
+            data_list, metadata_list, png_count, sub_directory, wise_view_queries = pickle.load(save_state_file)
 
-        return data_list, metadata_list, png_count, wise_view_queries
+        return data_list, metadata_list, png_count, sub_directory, wise_view_queries
 
     def deleteState(self, dataset_filename):
+        # Create a save state file name based on the dataset filename
         save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+
+        # Delete the save state file
         os.remove(save_state_filename)
 
     def stateExists(self, dataset_filename):
+        # Create a save state file name based on the dataset filename
         save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+
+        # Return whether the save state file exists
         return os.path.exists(save_state_filename)
 
+    def processChunk(self, chunk_number):
+        pass
+
+    def getNextSubDirectory(self, directories, sub_directory_limit, UI=None):
+        sub_directory_values = []
+
+        for sub_directory_name in directories:
+            try:
+                sub_directory_values.append(int(sub_directory_name))
+            except ValueError:
+                sub_directory_name_form = ""
+                for c in str(sub_directory_limit):
+                    sub_directory_name_form += "0"
+                if (not self.given_directory_warning):
+                    if (UI is None):
+                        warnings.warn(f"Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}")
+                    elif (isinstance(UI, UserInterface.UserInterface)):
+                        UI.updateConsole(f"Warning: Sub-directory name '{sub_directory_name}' is not of the form: {sub_directory_name_form}")
+                    self.given_directory_warning = True
+
+        max_value = max(sub_directory_values, default=-1)
+        max_value = max_value + 1
+        if (max_value > sub_directory_limit):
+            raise OverflowError(f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
+        sub_directory = str(max_value)
+        for i in range(len(str(sub_directory_limit)) - len(sub_directory)):
+            if (len(sub_directory) < len(str(sub_directory_limit))):
+                sub_directory = "0" + sub_directory
+
+        return sub_directory
+
+    def handleSubDirectoryOverflow(self, png_count, sub_directory, sub_directory_threshold, sub_directory_limit):
+        if (png_count >= sub_directory_threshold):
+            sub_directory = str(int(sub_directory) + 1)
+            if (int(sub_directory) + 1 > sub_directory_limit):
+                raise OverflowError(f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
+            for i in range(len(str(sub_directory_limit)) - len(sub_directory)):
+                if (len(sub_directory) < len(str(sub_directory_limit))):
+                    sub_directory = "0" + sub_directory
+            png_count = 0
+
+        return png_count, sub_directory
 
     def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
         # TODO: Service Error Success: {'message': 'Service Unavailable'}
         # TODO: Test upload has some empty subject images
+        # Initialize the data and metadata lists
         data_list = []
         metadata_list = []
 
+        # Initialize the ignored data and metadata lists
         ignored_data_list = []
         ignored_metadata_list = []
+
+        # Initialize the sub-directory values
         sub_directory_limit = 9999
         sub_directory_threshold = 100
+
+        # Initialize the png count
         png_count = 0
 
+        # Initialize the size of chunks to be processed
+        chunk_size = 10
+
+        # Initialize whether partial cutouts are to be ignored in the dataset
         if(UI is not None):
             ignore_partial_cutouts = UI.ignorePartialCutouts.get()
 
-        # Currently is only able to use CSV files
+        # Initialize the wise view queries list
+        wise_view_queries = []
+
+        # Get the total number of rows in the dataset for determining the progress
         total_data_rows = 0
         with open(dataset_filename, newline='') as dataset_file:
             total_data_rows = len(list(dataset_file)) - 1
 
+        # Begin processing the dataset file
         with open(dataset_filename, newline='') as dataset_file:
+
+            # Create a csv reader for the dataset file and get all its rows
             reader = csv.DictReader(dataset_file)
             all_rows = [row for row in reader]
 
-            chunk_size = 10
-            for chunk_i in range(0, len(all_rows), chunk_size):
+            # Get the number of chunks to be processed
+            total_chunks = math.ceil(len(all_rows) / chunk_size)
+
+            # Iterate through the chunks
+            for chunk_index in range(total_chunks):
+                # Initialize the sub-directory value to 0
                 sub_directory = 0
-                self.wise_view_queries = []
 
-                if(self.stateExists(dataset_filename)):
-                    data_list, metadata_list, png_count, self.wise_view_queries = self.loadState(dataset_filename)
-                    chunk_i = len(data_list)
-                chunk_num = int(chunk_i / chunk_size)
+                # Initialize the warning booleans
+                self.given_file_warning = False
+                self.given_directory_warning = False
 
-                chunk_rows = all_rows[chunk_i:(chunk_num + 1) * chunk_size]
-                if(len(chunk_rows) != 0):
-                    if (UI is None):
-                        print(f"Downloading chunk {chunk_num}: ")
-                    elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Downloading chunk {chunk_num}: ")
+                # Get the rows associated with the current chunk
+                chunk_rows = all_rows[chunk_index * chunk_size:(chunk_index + 1) * chunk_size]
 
-                given_file_warning = False
-                given_directory_warning = False
+                # Check if a save state exists for the dataset and if it does, load it.
+                if (self.stateExists(dataset_filename)):
+                    data_list, metadata_list, png_count, sub_directory, wise_view_queries = self.loadState(dataset_filename)
+                    current_row_index = len(data_list) - 1
+                    current_chunk_index = math.floor(current_row_index / chunk_size)
+                    if(current_chunk_index > chunk_index):
+                        continue
 
-                # Asynchronously generate all of the WiseViewQuery objects
-                # Iterate through rows in bunches of bunch_size
-                if(chunk_i - len(self.wise_view_queries) >= 0):
+                # Display that the chunk is being processed
+                if (UI is None):
+                    print(f"Downloading chunk {chunk_index}: ")
+                elif (isinstance(UI, UserInterface.UserInterface)):
+                    UI.updateConsole(f"Downloading chunk {chunk_index}: ")
+
+                # Get the overall row index of the first row in the chunk
+                chunk_first_row_index = chunk_index * chunk_size
+
+                # If there are more wise view queries than the chunk's first row index, then the wise view queries are already generated for this chunk
+                if (chunk_first_row_index - len(wise_view_queries) >= 0):
+
+                    # Set the bunch size for processing the wise view queries
                     bunch_size = 25
+
+                    # Create a process pool to generate the wise view queries
                     pool = mp.Pool()
                     for i in range(0, len(chunk_rows), bunch_size):
-                        if(i + bunch_size > len(chunk_rows)):
+                        if (i + bunch_size > len(chunk_rows)):
                             bunch_size = len(chunk_rows) - i
                         if (UI is None):
-                            print(f"Generating WiseViewQueries for rows {chunk_i + i + 1} to {chunk_i + i + bunch_size}")
+                            print(f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}")
                         elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Generating WiseViewQueries for rows {chunk_i + i + 1} to {chunk_i + i + bunch_size}")
+                            UI.updateConsole(
+                                f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}")
 
-                        # get the next bunch of rows
+                        # Get the bunch of rows to be processed
                         bunch = chunk_rows[i:i + bunch_size]
-                        # create a pool of processes
+
+                        # Create a list of processes to generate the wise view queries
                         processes = [pool.apply_async(self.generateRowWiseViewQuery, args=(row,)) for row in bunch]
+
+                        # Get the wise view queries from the processes
                         bunch_wise_view_queries = [p.get() for p in processes]
-                        self.wise_view_queries.extend(bunch_wise_view_queries)
+
+                        # Add the wise view queries to the overall wise view queries list
+                        wise_view_queries.extend(bunch_wise_view_queries)
+
+                    # Close the process pool
                     pool.close()
-                    self.saveState(dataset_filename, data_list, metadata_list, png_count, self.wise_view_queries)
 
+                    # Save the state
+                    self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
+
+                    # Display that the image downloads are beginning for the chunk
                     if (UI is None):
-                        print(f"Beginning image downloads for chunk {chunk_num}.")
+                        print(f"Beginning image downloads for chunk {chunk_index}.")
                     elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Beginning image downloads for chunk {chunk_num}.")
+                        UI.updateConsole(f"Beginning image downloads for chunk {chunk_index}.")
 
-                for index, row in enumerate(chunk_rows):
+                # Iterate through the rows in the chunk
+                for chunk_row_index, row in enumerate(chunk_rows):
+
+                    # Get the row index of the current row being processed
+                    row_index = chunk_index * chunk_size + chunk_row_index
+
+                    # Check if a save state exists for the dataset and if it does, load it.
+                    if (self.stateExists(dataset_filename)):
+                        data_list, metadata_list, png_count, sub_directory, wise_view_queries = self.loadState(dataset_filename)
+                        loaded_row_index = len(data_list) - 1
+                        if(row_index <= loaded_row_index):
+                            continue
+
                     # Get the PNG_DIRECTORY from the row
                     PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
 
-                    sub_directory_values = []
-                    if(index == 0):
-                        if(chunk_i == 0):
-                            # Create all the chunk directories
-                            for j in range(0, len(all_rows), chunk_size):
-                                n = int(j / chunk_size)
+
+                    # Check if the current index is the first index of the chunk
+                    if(chunk_row_index == 0):
+
+                        # Check if the current chunk is the first chunk
+                        if(chunk_index == 0):
+                            # Loop through each chunk index to create the chunk directories
+                            for n in range(total_chunks):
+
                                 # If the chunk directory doesn't exist, create it
                                 if (not os.path.exists(os.path.join(PNG_DIRECTORY, f"Chunk_{n}"))):
                                     os.mkdir(os.path.join(PNG_DIRECTORY, f"Chunk_{n}"))
                                 else:
+                                    # If the chunk directory already exists, display a warning
                                     if (UI is None):
                                         warnings.warn(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.")
                                     elif (isinstance(UI, UserInterface.UserInterface)):
                                         UI.updateConsole(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.")
-                        chunk_directory = os.path.join(PNG_DIRECTORY, f"Chunk_{chunk_num}")
+
+                        # Create the filepath for the current chunk directory
+                        chunk_directory = os.path.join(PNG_DIRECTORY, f"Chunk_{chunk_index}")
+
+                        # Get the directories in the chunk directory
                         directories = [name for name in os.listdir(chunk_directory) if os.path.isdir(os.path.join(chunk_directory, name))]
 
-                        if (not given_file_warning):
-                            # Get all of the sub-directories/files in the chunk_directory which are not known png directories
+                        # Increment the sub_directory value to the next sub_directory
+                        if(len(directories) == 0):
+                            sub_directory = self.getNextSubDirectory(directories, sub_directory_limit, UI)
+
+                        # Save the state
+                        self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
+
+                        # If a non-png directory is found, display a warning. Unless the user has already been warned.
+                        if (not self.given_file_warning):
+
+                            # Get all of the directories/files in the chunk_directory which are not known png directories
                             file_list = [x for x in os.listdir(chunk_directory) if x not in directories]
                             # Remove .DS_Store from the list if it is present (MAC-OS file)
                             if (platform.system() == "Darwin" and ".DS_Store" in file_list):
@@ -601,93 +722,75 @@ class CN_Dataset(Zooniverse_Dataset):
                             if (len(file_list) != 0):
                                 if (len(file_list) == 1):
                                     if (UI is None):
-                                        warnings.warn(
-                                            f"The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}")
+                                        warnings.warn(f"The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}")
                                     elif (isinstance(UI, UserInterface.UserInterface)):
-                                        UI.updateConsole(
-                                            f"Warning: The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}")
+                                        UI.updateConsole(f"Warning: The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}")
                                 else:
                                     if (UI is None):
-                                        warnings.warn(
-                                            f"The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}")
+                                        warnings.warn(f"The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}")
                                     elif (isinstance(UI, UserInterface.UserInterface)):
-                                        UI.updateConsole(
-                                            f"Warning: The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}")
-                                given_file_warning = True
+                                        UI.updateConsole(f"Warning: The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}")
+                                self.given_file_warning = True
 
-                        max_value = max(sub_directory_values, default=-1)
-                        max_value = max_value + 1
-                        if (max_value > sub_directory_limit):
-                            raise OverflowError(
-                                f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
-                        sub_directory = str(max_value)
-                        for i in range(len(str(sub_directory_limit)) - len(sub_directory)):
-                            if (len(sub_directory) < len(str(sub_directory_limit))):
-                                sub_directory = "0" + sub_directory
+                    # Check if the current sub_directory has reached the sub_directory_threshold, and if it has update sub_directory and png_count
+                    png_count, sub_directory = self.handleSubDirectoryOverflow(png_count, sub_directory, sub_directory_threshold, sub_directory_limit)
 
-                    chunk_directory = os.path.join(PNG_DIRECTORY, f"Chunk_{chunk_num}")
-                    directories = [name for name in os.listdir(chunk_directory) if os.path.isdir(os.path.join(chunk_directory, name))]
+                    # Save the state
+                    self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
 
-                    for sub_directory_name in directories:
-                        try:
-                            sub_directory_values.append(int(sub_directory_name))
-                        except ValueError:
-                            sub_directory_name_form = ""
-                            for c in str(sub_directory_limit):
-                                sub_directory_name_form += "0"
-                            if (not given_directory_warning):
-                                if (UI is None):
-                                    warnings.warn(
-                                        f"Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}")
-                                elif (isinstance(UI, UserInterface.UserInterface)):
-                                    UI.updateConsole(
-                                        f"Warning: Sub-directory name '{sub_directory_name}' is not of the form: {sub_directory_name_form}")
-                                given_directory_warning = True
-
-                    if (png_count >= sub_directory_threshold):
-                        sub_directory = str(int(sub_directory) + 1)
-                        if (int(sub_directory) + 1 > sub_directory_limit):
-                            raise OverflowError(
-                                f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
-                        for i in range(len(str(sub_directory_limit)) - len(sub_directory)):
-                            if (len(sub_directory) < len(str(sub_directory_limit))):
-                                sub_directory = "0" + sub_directory
-                        png_count = 0
-
-                    row_index = chunk_i + index
+                    # Begin to generate the data and metadata for the current row and disable the ability to safely quit
                     UI.canSafelyQuit = False
-                    data, metadata, png_count, is_partial_cutout = self.generateDataAndMetadata(row, row_index, png_count, os.path.join(f"Chunk_{chunk_num}", sub_directory))
 
+                    # Generate the data and metadata for the current row
+                    data, metadata, png_count, is_partial_cutout = self.generateDataAndMetadata(row, row_index, png_count, os.path.join(f"Chunk_{chunk_index}", sub_directory), wise_view_queries)
+
+                    # Display that the current row has been ignored if it is a partial cutout and ignore_partial_cutouts is True
                     if (display_printouts):
                         if (is_partial_cutout and ignore_partial_cutouts):
                             RA = float(row['RA'])
                             DEC = float(row['DEC'])
                             if (UI is None):
-                                print(f"Row {chunk_i + index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
+                                print(f"Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                             elif (isinstance(UI, UserInterface.UserInterface)):
-                                UI.updateConsole(f"Row {chunk_i + index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
+                                UI.updateConsole(f"Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                         else:
                             if (UI is None):
-                                print(f"Row {chunk_i + index + 1} out of {total_data_rows} has been downloaded.")
+                                print(f"Row {row_index + 1} out of {total_data_rows} has been downloaded.")
                             elif (isinstance(UI, UserInterface.UserInterface)):
-                                UI.updateConsole(f"Row {chunk_i + index + 1} out of {total_data_rows} has been downloaded.")
+                                UI.updateConsole(f"Row {row_index + 1} out of {total_data_rows} has been downloaded.")
 
+                    # Check if the current row is a partial cutout and if ignore_partial_cutouts is True
                     if (not is_partial_cutout or not ignore_partial_cutouts):
+                        # Add the data and metadata to the lists
                         data_list.append(data)
                         metadata_list.append(metadata)
-                        self.saveState(dataset_filename, data_list, metadata_list, png_count, self.wise_view_queries)
+
+                        # Save the state
+                        self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
                     else:
+                        # Add the data and metadata to the ignored lists if the row is a partial cutout and ignore_partial_cutouts is True
                         ignored_data_list.append(data)
                         ignored_metadata_list.append(metadata)
+
+                    # Enable the ability to safely quit
                     UI.canSafelyQuit = True
+
+                # Reset the png_count
                 png_count = 0
-                self.saveState(dataset_filename, data_list, metadata_list, png_count, self.wise_view_queries)
-            ignored_targets_csv_filename = f"ignored-targets_chunk_{chunk_num}.csv"
+
+                # Save the state
+                self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
+
+            # Generate the CSV files for the ignored data and metadata
+            ignored_targets_csv_filename = f"ignored-targets_chunk_{chunk_index}.csv"
             if (len(ignored_data_list) != 0):
                 self.generateIgnoredTargetsCSV(ignored_targets_csv_filename, ignored_data_list, ignored_metadata_list)
             elif(os.path.exists(ignored_targets_csv_filename)):
                 os.remove(ignored_targets_csv_filename)
+        # Delete the state
         self.deleteState(dataset_filename)
+
+        # Return the data and metadata lists
         return data_list, metadata_list
 
 import UserInterface

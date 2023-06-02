@@ -263,6 +263,8 @@ class UserInterface:
         self.session = Session(self)
 
         self.canSafelyQuit = True
+
+        self.performingState = False
         
 
     def frameInit(self):
@@ -670,32 +672,41 @@ class UserInterface:
         return not isError
 
     def performState(self):
-        if (self.verifyInputs()):
-            if(self.printProgress.get()):
-                now = datetime.now()
-                self.updateConsole(f"Started pipeline at: {now}")
-            metadata_dict = {f"{Data.Metadata.privatization_symbol}ADDGRID": int(self.addGrid.get()),
-                             f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(),
-                             "FOV": self.FOV.get(),
-                             f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY": self.pngDirectory.get(),
-                             f"{Data.Metadata.privatization_symbol}MINBRIGHT": self.minBright.get(),
-                             f"{Data.Metadata.privatization_symbol}MAXBRIGHT": self.maxBright.get(),
-                             f"{Data.Metadata.privatization_symbol}GRIDCOUNT": int(self.gridCount.get()),
-                             f"{Data.Metadata.privatization_symbol}GRIDTYPE": self.gridType.get(),
-                             f"{Data.Metadata.privatization_symbol}GRIDCOLOR": str(self.gridColor)}
+        if(not self.performingState):
+            if (self.verifyInputs()):
+                if(self.printProgress.get()):
+                    now = datetime.now()
+                    self.updateConsole(f"Started pipeline at: {now}")
+                metadata_dict = {f"{Data.Metadata.privatization_symbol}ADDGRID": int(self.addGrid.get()),
+                                 f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(),
+                                 "FOV": self.FOV.get(),
+                                 f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY": self.pngDirectory.get(),
+                                 f"{Data.Metadata.privatization_symbol}MINBRIGHT": self.minBright.get(),
+                                 f"{Data.Metadata.privatization_symbol}MAXBRIGHT": self.maxBright.get(),
+                                 f"{Data.Metadata.privatization_symbol}GRIDCOUNT": int(self.gridCount.get()),
+                                 f"{Data.Metadata.privatization_symbol}GRIDTYPE": self.gridType.get(),
+                                 f"{Data.Metadata.privatization_symbol}GRIDCOLOR": str(self.gridColor)}
 
-            # Creates metadata-target.csv
-            ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
+                # Creates metadata-target.csv
+                ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
 
-            if (self.state.get() == 'f'):
-                ZooniversePipeline.fullPipeline(self)
-            elif (self.state.get() == 'm'):
-                ZooniversePipeline.generateManifest(self)
-            elif (self.state.get() == 'u'):
-                ZooniversePipeline.publishToZooniverse(self)
-            # Calls interface to determine how the program should run.
-            else:
-                print("You broke the pipeline :(")
+                if (self.state.get() == 'f'):
+                    self.performingState = True
+                    ZooniversePipeline.fullPipeline(self)
+                    self.performingState = False
+                elif (self.state.get() == 'm'):
+                    self.performingState = True
+                    ZooniversePipeline.generateManifest(self)
+                    self.performingState = False
+                elif (self.state.get() == 'u'):
+                    self.performingState = True
+                    ZooniversePipeline.publishToZooniverse(self)
+                    self.performingState = False
+                # Calls interface to determine how the program should run.
+                else:
+                    print("You broke the pipeline :(")
+        else:
+            self.updateConsole("Pipeline is already active. Please wait until it is finished.")
 
     def updateConsole(self, new_text):
         self.console_scrolled_text.config(state=tk.NORMAL)
