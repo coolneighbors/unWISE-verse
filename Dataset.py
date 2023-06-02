@@ -7,6 +7,7 @@ Created on Thursday, June 9th
 import csv
 import math
 import os
+import pickle
 from copy import copy
 from statistics import mean
 import warnings
@@ -278,9 +279,9 @@ class Zooniverse_Dataset(Dataset):
 
         return data_list, metadata_list
 
-    def generateIgnoredTargetsCSV(self, ignored_data_list, ignored_metadata_list):
+    def generateIgnoredTargetsCSV(self, filename, ignored_data_list, ignored_metadata_list):
         temp_dataset = Dataset(ignored_data_list,ignored_metadata_list,self.require_uniform_fields)
-        with open("ignored-targets.csv", "w", newline='') as ignored_targets_file:
+        with open(filename, "w", newline='') as ignored_targets_file:
             writer = csv.DictWriter(ignored_targets_file, [*temp_dataset.metadata_field_names,*temp_dataset.data_field_names])
             writer.writeheader()
             for dataset_dict in temp_dataset:
@@ -288,7 +289,7 @@ class Zooniverse_Dataset(Dataset):
 
 class CN_Dataset(Zooniverse_Dataset):
 
-    def __init__(self, dataset_filename, ignore_partial_cutouts=False, require_uniform_fields = True, display_printouts = False, UI = None):
+    def __init__(self, dataset_filename, ignore_partial_cutouts=False, require_uniform_fields=True, display_printouts=False, UI=None):
         """
         Initializes a CN_Dataset object (child Class of Zooniverse_Dataset), a container which holds a list of Data
         objects and a list of Metadata objects. When accessing, per index a dictionary containing the corresponding Data
@@ -323,21 +324,36 @@ class CN_Dataset(Zooniverse_Dataset):
             The number of required pieces of metadata will most likely change throughout development, so make sure to
             keep updating this documentation regularly.
         """
-        super(CN_Dataset, self).__init__(dataset_filename,ignore_partial_cutouts, require_uniform_fields, display_printouts, UI)
+        super(CN_Dataset, self).__init__(dataset_filename, ignore_partial_cutouts, require_uniform_fields, display_printouts, UI)
 
     def generateRowWiseViewQuery(self, row):
+        """
+        Generates a WiseViewQuery object from a row of a dataset CSV file.
+
+        Parameters
+        ----------
+        row : dict
+            A dictionary containing the metadata for a single row of a dataset CSV file. Keys should be the field names.
+
+        Returns
+        -------
+        wise_view_query : WiseViewQuery object
+            A WiseViewQuery object generated from the row of the dataset CSV file.
+
+        """
+
+
         RA = float(row['RA'])
         DEC = float(row['DEC'])
         FOV = float(row['FOV'])
 
-        # pixel side-length of the images
+        # Pixel side-length of the images
         SIZE = WiseViewQuery.WiseViewQuery.FOVToPixelSize(FOV)
 
         MINBRIGHT = None
         MAXBRIGHT = None
 
-        if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == "" or row[
-            f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+        if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == "" or row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
 
             unWISE_query = unWISEQuery.unWISEQuery(ra=RA, dec=DEC, size=SIZE, bands=12)
             brightness_clip = unWISE_query.calculateBrightnessClip(mode="percentile", percentile=97.5)
@@ -360,15 +376,141 @@ class CN_Dataset(Zooniverse_Dataset):
         wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT, window=1.5)
         return wise_view_query
 
+    def generateDataAndMetadata(self, row, index, png_count, sub_directory_path):
+        # Get metadata
+        RA = float(row['RA'])
+        DEC = float(row['DEC'])
+        PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
+        ADDGRID = int(row[f'{Metadata.privatization_symbol}ADDGRID'])
+        GRIDCOUNT = int(row[f'{Metadata.privatization_symbol}GRIDCOUNT'])
+        SCALE = int(row[f'{Metadata.privatization_symbol}SCALE'])
+        FOV = float(row['FOV'])
+
+        GRIDTYPE = row[f'{Metadata.privatization_symbol}GRIDTYPE']
+        RGB_list = []
+        for s in row[f'{Metadata.privatization_symbol}GRIDCOLOR'][1:][:-1].split(","):
+            RGB_list.append(int(s))
+        GRIDCOLOR = tuple(RGB_list)
+
+        # Access the WiseViewQuery object for this row
+        wise_view_query = self.wise_view_queries[index]
+
+        # Assign the metadata values to the row
+        row[f'{Metadata.privatization_symbol}MINBRIGHT'] = wise_view_query.wise_view_parameters["minbright"]
+        row[f'{Metadata.privatization_symbol}MAXBRIGHT'] = wise_view_query.wise_view_parameters["maxbright"]
+        row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
+        row['Data Source'] = f"[unWISE](+tab+http://unwise.me/)"
+        row['unWISE Pixel Scale'] = f"~{WiseViewQuery.unWISE_pixel_scale} arcseconds per pixel"
+
+        # Get the modified Julian dates for each frame
+        modified_julian_date_pairs = wise_view_query.requestMetadata("mjds")
+        date_str = ""
+        for i in range(len(modified_julian_date_pairs)):
+            for j in range(len(modified_julian_date_pairs[i])):
+                if (j == 0):
+                    time_start = time.Time(modified_julian_date_pairs[i][j], format="mjd").to_value("decimalyear")
+                if (j == len(modified_julian_date_pairs[i]) - 1):
+                    time_end = time.Time(modified_julian_date_pairs[i][j], format="mjd").to_value("decimalyear")
+            if (time_start == time_end):
+                if (i != len(modified_julian_date_pairs) - 1):
+                    date_str = date_str + f"Frame {i + 1}: {round(time_start, 2)}, "
+                else:
+                    date_str = date_str + f"Frame {i + 1}: {round(time_start, 2)}"
+            else:
+                if (i != len(modified_julian_date_pairs) - 1):
+                    date_str = date_str + f"Frame {i + 1}: {round(mean([time_start, time_end]), 2)}, "
+                else:
+                    date_str = date_str + f"Frame {i + 1}: {round(mean([time_start, time_end]), 2)}"
+
+        # Assign the generated modified Julian dates string to the row
+        row["Decimal Year Epochs"] = date_str
+
+        # Determine the galactic and ecliptic coordinates of the image and assign them to the row
+        ICRS_coordinates = SkyCoord(ra=RA * u.degree, dec=DEC * u.degree, frame='icrs')
+
+        galactic_coordinates = ICRS_coordinates.transform_to(frame="galactic")
+        row['Galactic Coordinates'] = galactic_coordinates.to_string("decimal")
+
+        ecliptic_coordinates = ICRS_coordinates.transform_to(frame=astropy.coordinates.GeocentricMeanEcliptic)
+        row['Ecliptic Coordinates'] = ecliptic_coordinates.to_string("decimal")
+
+
+        # Assign the associated WISEVIEW url to the row
+        row['WISEVIEW'] = f"[WiseView](+tab+{wise_view_query.generateWiseViewURL()})"
+
+        # Radius is the smallest circle radius which encloses the square image.
+        # This is done to ensure the entire image frame is searched.
+        radius = (math.sqrt(2) / 2) * FOV
+
+        # Assign the associated SIMBAD, Legacy Surveys, VizieR, and IRSA urls to the row
+        row['SIMBAD'] = f"[SIMBAD](+tab+{MetadataPointers.generate_SIMBAD_url(RA, DEC, radius)})"
+        row['Legacy Surveys'] = f"[Legacy Surveys](+tab+{MetadataPointers.generate_legacy_survey_url(RA, DEC)})"
+        row['VizieR'] = f"[VizieR](+tab+{MetadataPointers.generate_VizieR_url(RA, DEC, FOV)})"
+        row['IRSA'] = f"[IRSA](+tab+{MetadataPointers.generate_IRSA_url(RA, DEC)})"
+
+        row_metadata = list(row.values())
+        metadata_field_names = list(row.keys())
+
+        # Save all images for parameter set, add grid if toggled for that image
+        flist, size_list = wise_view_query.downloadWiseViewData(os.path.join(PNG_DIRECTORY, sub_directory_path),
+                                                                scale_factor=SCALE, addGrid=ADDGRID,
+                                                                gridCount=GRIDCOUNT, gridType=GRIDTYPE,
+                                                                gridColor=GRIDCOLOR)
+        png_count += len(flist)
+
+        is_partial_cutout = False
+        for size in size_list:
+            width, height = size
+            if (width != height):
+                is_partial_cutout = True
+                break
+
+        data_field_names = []
+        for i in range(len(flist)):
+            data_field_names.append("f" + str(i + 1))
+
+        data = Data(data_field_names, flist)
+        metadata = Metadata(metadata_field_names, row_metadata)
+
+        return data, metadata, png_count, is_partial_cutout
+
+
+    def saveState(self, dataset_filename, data_list, metadata_list, png_count, wise_view_queries):
+        save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+
+        # Save the data and metadata lists to a pickle file
+        with open(save_state_filename, 'wb') as save_state_file:
+            pickle.dump([data_list, metadata_list, png_count, wise_view_queries], save_state_file)
+
+    def loadState(self, dataset_filename):
+        save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+
+        # Load the data and metadata lists from a pickle file
+        with open(save_state_filename, 'rb') as save_state_file:
+            data_list, metadata_list, png_count, wise_view_queries = pickle.load(save_state_file)
+
+        return data_list, metadata_list, png_count, wise_view_queries
+
+    def deleteState(self, dataset_filename):
+        save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+        os.remove(save_state_filename)
+
+    def stateExists(self, dataset_filename):
+        save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+        return os.path.exists(save_state_filename)
+
+
     def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
+        # TODO: Service Error Success: {'message': 'Service Unavailable'}
+        # TODO: Test upload has some empty subject images
         data_list = []
         metadata_list = []
 
         ignored_data_list = []
         ignored_metadata_list = []
-
         sub_directory_limit = 9999
-        sub_directory_threshold = 1000
+        sub_directory_threshold = 100
+        png_count = 0
 
         if(UI is not None):
             ignore_partial_cutouts = UI.ignorePartialCutouts.get()
@@ -380,69 +522,111 @@ class CN_Dataset(Zooniverse_Dataset):
 
         with open(dataset_filename, newline='') as dataset_file:
             reader = csv.DictReader(dataset_file)
-            rows = [row for row in reader]
-            count = 0
-            png_count = 0
-            given_file_warning = False
-            given_directory_warning = False
-            wise_view_queries = []
+            all_rows = [row for row in reader]
 
-            # Asynchronously generate all of the WiseViewQuery objects
-            bunch_size = 25
-            # iterate through rows in bunches of bunch_size
-            pool = mp.Pool()
-            for i in range(0, len(rows), bunch_size):
-                if(i + bunch_size > len(rows)):
-                    bunch_size = len(rows) - i
-                if (UI is None):
-                    print(f"Generating WiseViewQueries for rows {i+1} to {i + bunch_size}")
-                elif (isinstance(UI, UserInterface.UserInterface)):
-                    UI.updateConsole(f"Generating WiseViewQueries for rows {i+1} to {i + bunch_size}")
+            chunk_size = 10
+            for chunk_i in range(0, len(all_rows), chunk_size):
+                sub_directory = 0
+                self.wise_view_queries = []
 
-                # get the next bunch of rows
-                bunch = rows[i:i + bunch_size]
-                # create a pool of processes
-                processes = [pool.apply_async(self.generateRowWiseViewQuery, args=(row,)) for row in bunch]
-                bunch_wise_view_queries = [p.get() for p in processes]
-                wise_view_queries.extend(bunch_wise_view_queries)
-            pool.close()
+                if(self.stateExists(dataset_filename)):
+                    data_list, metadata_list, png_count, self.wise_view_queries = self.loadState(dataset_filename)
+                    chunk_i = len(data_list)
+                chunk_num = int(chunk_i / chunk_size)
 
-            for row in rows:
-                # Get metadata
-                RA = float(row['RA'])
-                DEC = float(row['DEC'])
-                PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
-                ADDGRID = int(row[f'{Metadata.privatization_symbol}ADDGRID'])
-                GRIDCOUNT= int(row[f'{Metadata.privatization_symbol}GRIDCOUNT'])
-                SCALE = int(row[f'{Metadata.privatization_symbol}SCALE'])
-                FOV = float(row['FOV'])
+                chunk_rows = all_rows[chunk_i:(chunk_num + 1) * chunk_size]
+                if(len(chunk_rows) != 0):
+                    if (UI is None):
+                        print(f"Downloading chunk {chunk_num}: ")
+                    elif (isinstance(UI, UserInterface.UserInterface)):
+                        UI.updateConsole(f"Downloading chunk {chunk_num}: ")
 
+                given_file_warning = False
+                given_directory_warning = False
 
-                GRIDTYPE = row[f'{Metadata.privatization_symbol}GRIDTYPE']
-                RGB_list = []
-                for s in row[f'{Metadata.privatization_symbol}GRIDCOLOR'][1:][:-1].split(","):
-                    RGB_list.append(int(s))
-                GRIDCOLOR = tuple(RGB_list)
+                # Asynchronously generate all of the WiseViewQuery objects
+                # Iterate through rows in bunches of bunch_size
+                if(chunk_i - len(self.wise_view_queries) >= 0):
+                    bunch_size = 25
+                    pool = mp.Pool()
+                    for i in range(0, len(chunk_rows), bunch_size):
+                        if(i + bunch_size > len(chunk_rows)):
+                            bunch_size = len(chunk_rows) - i
+                        if (UI is None):
+                            print(f"Generating WiseViewQueries for rows {chunk_i + i + 1} to {chunk_i + i + bunch_size}")
+                        elif (isinstance(UI, UserInterface.UserInterface)):
+                            UI.updateConsole(f"Generating WiseViewQueries for rows {chunk_i + i + 1} to {chunk_i + i + bunch_size}")
 
-                if(count == 0):
+                        # get the next bunch of rows
+                        bunch = chunk_rows[i:i + bunch_size]
+                        # create a pool of processes
+                        processes = [pool.apply_async(self.generateRowWiseViewQuery, args=(row,)) for row in bunch]
+                        bunch_wise_view_queries = [p.get() for p in processes]
+                        self.wise_view_queries.extend(bunch_wise_view_queries)
+                    pool.close()
+                    self.saveState(dataset_filename, data_list, metadata_list, png_count, self.wise_view_queries)
+
+                    if (UI is None):
+                        print(f"Beginning image downloads for chunk {chunk_num}.")
+                    elif (isinstance(UI, UserInterface.UserInterface)):
+                        UI.updateConsole(f"Beginning image downloads for chunk {chunk_num}.")
+
+                for index, row in enumerate(chunk_rows):
+                    # Get the PNG_DIRECTORY from the row
+                    PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
+
                     sub_directory_values = []
-                    directories = [name for name in os.listdir(PNG_DIRECTORY) if os.path.isdir(os.path.join(PNG_DIRECTORY, name))]
-                    if(not given_file_warning):
-                        file_list = [x for x in os.listdir(PNG_DIRECTORY) if x not in directories]
-                        if (platform.system() == "Darwin" and ".DS_Store" in file_list):
-                            file_list.remove(".DS_Store")
-                        if (len(file_list) != 0):
-                            if(len(file_list) == 1):
-                                if (UI is None):
-                                    warnings.warn(f"The following file was found in {PNG_DIRECTORY} and does not belong: {', '.join(file_list)}")
-                                elif (isinstance(UI, UserInterface.UserInterface)):
-                                    UI.updateConsole(f"Warning: The following file was found in {PNG_DIRECTORY} and does not belong: {', '.join(file_list)}")
-                            else:
-                                if (UI is None):
-                                    warnings.warn(f"The following files were found in {PNG_DIRECTORY} and do not belong: {', '.join(file_list)}")
-                                elif (isinstance(UI, UserInterface.UserInterface)):
-                                    UI.updateConsole(f"Warning: The following files were found in {PNG_DIRECTORY} and do not belong: {', '.join(file_list)}")
-                            given_file_warning = True
+                    if(index == 0):
+                        if(chunk_i == 0):
+                            # Create all the chunk directories
+                            for j in range(0, len(all_rows), chunk_size):
+                                n = int(j / chunk_size)
+                                # If the chunk directory doesn't exist, create it
+                                if (not os.path.exists(os.path.join(PNG_DIRECTORY, f"Chunk_{n}"))):
+                                    os.mkdir(os.path.join(PNG_DIRECTORY, f"Chunk_{n}"))
+                                else:
+                                    if (UI is None):
+                                        warnings.warn(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.")
+                                    elif (isinstance(UI, UserInterface.UserInterface)):
+                                        UI.updateConsole(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.")
+                        chunk_directory = os.path.join(PNG_DIRECTORY, f"Chunk_{chunk_num}")
+                        directories = [name for name in os.listdir(chunk_directory) if os.path.isdir(os.path.join(chunk_directory, name))]
+
+                        if (not given_file_warning):
+                            # Get all of the sub-directories/files in the chunk_directory which are not known png directories
+                            file_list = [x for x in os.listdir(chunk_directory) if x not in directories]
+                            # Remove .DS_Store from the list if it is present (MAC-OS file)
+                            if (platform.system() == "Darwin" and ".DS_Store" in file_list):
+                                file_list.remove(".DS_Store")
+                            if (len(file_list) != 0):
+                                if (len(file_list) == 1):
+                                    if (UI is None):
+                                        warnings.warn(
+                                            f"The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}")
+                                    elif (isinstance(UI, UserInterface.UserInterface)):
+                                        UI.updateConsole(
+                                            f"Warning: The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}")
+                                else:
+                                    if (UI is None):
+                                        warnings.warn(
+                                            f"The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}")
+                                    elif (isinstance(UI, UserInterface.UserInterface)):
+                                        UI.updateConsole(
+                                            f"Warning: The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}")
+                                given_file_warning = True
+
+                        max_value = max(sub_directory_values, default=-1)
+                        max_value = max_value + 1
+                        if (max_value > sub_directory_limit):
+                            raise OverflowError(
+                                f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
+                        sub_directory = str(max_value)
+                        for i in range(len(str(sub_directory_limit)) - len(sub_directory)):
+                            if (len(sub_directory) < len(str(sub_directory_limit))):
+                                sub_directory = "0" + sub_directory
+
+                    chunk_directory = os.path.join(PNG_DIRECTORY, f"Chunk_{chunk_num}")
+                    directories = [name for name in os.listdir(chunk_directory) if os.path.isdir(os.path.join(chunk_directory, name))]
 
                     for sub_directory_name in directories:
                         try:
@@ -453,127 +637,57 @@ class CN_Dataset(Zooniverse_Dataset):
                                 sub_directory_name_form += "0"
                             if (not given_directory_warning):
                                 if (UI is None):
-                                    warnings.warn(f"Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}")
+                                    warnings.warn(
+                                        f"Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}")
                                 elif (isinstance(UI, UserInterface.UserInterface)):
-                                    UI.updateConsole(f"Warning: Sub-directory name '{sub_directory_name}' is not of the form: {sub_directory_name_form}")
+                                    UI.updateConsole(
+                                        f"Warning: Sub-directory name '{sub_directory_name}' is not of the form: {sub_directory_name_form}")
                                 given_directory_warning = True
-                    max_value = max(sub_directory_values, default=-1)
-                    max_value = max_value + 1
-                    if(max_value > sub_directory_limit):
-                        raise OverflowError(f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
-                    sub_directory = str(max_value)
-                    for i in range(len(str(sub_directory_limit)) - len(sub_directory)):
-                        if (len(sub_directory) < len(str(sub_directory_limit))):
-                            sub_directory = "0" + sub_directory
 
-                count += 1
+                    if (png_count >= sub_directory_threshold):
+                        sub_directory = str(int(sub_directory) + 1)
+                        if (int(sub_directory) + 1 > sub_directory_limit):
+                            raise OverflowError(
+                                f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
+                        for i in range(len(str(sub_directory_limit)) - len(sub_directory)):
+                            if (len(sub_directory) < len(str(sub_directory_limit))):
+                                sub_directory = "0" + sub_directory
+                        png_count = 0
 
-                wise_view_query = wise_view_queries[count - 1]
+                    row_index = chunk_i + index
+                    UI.canSafelyQuit = False
+                    data, metadata, png_count, is_partial_cutout = self.generateDataAndMetadata(row, row_index, png_count, os.path.join(f"Chunk_{chunk_num}", sub_directory))
 
-                MINBRIGHT = wise_view_query.wise_view_parameters["minbright"]
-                MAXBRIGHT = wise_view_query.wise_view_parameters["maxbright"]
-
-                row[f'{Metadata.privatization_symbol}MINBRIGHT'] = MINBRIGHT
-                row[f'{Metadata.privatization_symbol}MAXBRIGHT'] = MAXBRIGHT
-
-
-                # Set generated metadata
-                row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
-                row['Data Source'] = f"[unWISE](+tab+http://unwise.me/)"
-                row['unWISE Pixel Scale'] = f"~{WiseViewQuery.unWISE_pixel_scale} arcseconds per pixel"
-                modified_julian_date_pairs = wise_view_query.requestMetadata("mjds")
-                date_str = ""
-                for i in range(len(modified_julian_date_pairs)):
-                    for j in range(len(wise_view_query.requestMetadata("mjds")[i])):
-                        if(j == 0):
-                            time_start = time.Time(wise_view_query.requestMetadata("mjds")[i][j],format="mjd").to_value("decimalyear")
-                        if(j == len(wise_view_query.requestMetadata("mjds")[i])-1):
-                            time_end = time.Time(wise_view_query.requestMetadata("mjds")[i][j],format="mjd").to_value("decimalyear")
-                    if(time_start == time_end):
-                        if(i != len(modified_julian_date_pairs)-1):
-                            date_str = date_str + f"Frame {i+1}: {round(time_start,2)}, "
+                    if (display_printouts):
+                        if (is_partial_cutout and ignore_partial_cutouts):
+                            RA = float(row['RA'])
+                            DEC = float(row['DEC'])
+                            if (UI is None):
+                                print(f"Row {chunk_i + index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
+                            elif (isinstance(UI, UserInterface.UserInterface)):
+                                UI.updateConsole(f"Row {chunk_i + index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
                         else:
-                            date_str = date_str + f"Frame {i+1}: {round(time_start,2)}"
+                            if (UI is None):
+                                print(f"Row {chunk_i + index + 1} out of {total_data_rows} has been downloaded.")
+                            elif (isinstance(UI, UserInterface.UserInterface)):
+                                UI.updateConsole(f"Row {chunk_i + index + 1} out of {total_data_rows} has been downloaded.")
+
+                    if (not is_partial_cutout or not ignore_partial_cutouts):
+                        data_list.append(data)
+                        metadata_list.append(metadata)
+                        self.saveState(dataset_filename, data_list, metadata_list, png_count, self.wise_view_queries)
                     else:
-                        if(i != len(modified_julian_date_pairs)-1):
-                            date_str = date_str + f"Frame {i+1}: {round(mean([time_start,time_end]),2)}, "
-                        else:
-                            date_str = date_str + f"Frame {i+1}: {round(mean([time_start,time_end]),2)}"
-
-                row["Decimal Year Epochs"] = date_str
-
-                ICRS_coordinates = SkyCoord(ra=RA*u.degree, dec=DEC*u.degree, frame='icrs')
-
-                galactic_coordinates = ICRS_coordinates.transform_to(frame="galactic")
-                row['Galactic Coordinates'] = galactic_coordinates.to_string("decimal")
-
-                ecliptic_coordinates = ICRS_coordinates.transform_to(frame=astropy.coordinates.GeocentricMeanEcliptic)
-                row['Ecliptic Coordinates'] = ecliptic_coordinates.to_string("decimal")
-
-                row['WISEVIEW'] = f"[WiseView](+tab+{wise_view_query.generateWiseViewURL()})"
-
-                # Radius is the smallest circle radius which encloses the square image.
-                # This is done to ensure the entire image frame is searched.
-                radius = (math.sqrt(2) / 2) * FOV
-                row['SIMBAD'] = f"[SIMBAD](+tab+{MetadataPointers.generate_SIMBAD_url(RA, DEC, radius)})"
-
-                row['Legacy Surveys'] = f"[Legacy Surveys](+tab+{MetadataPointers.generate_legacy_survey_url(RA, DEC)})"
-
-                row['VizieR'] = f"[VizieR](+tab+{MetadataPointers.generate_VizieR_url(RA, DEC, FOV)})"
-
-                row['IRSA'] = f"[IRSA](+tab+{MetadataPointers.generate_IRSA_url(RA, DEC)})"
-
-                row_metadata = list(row.values())
-                metadata_field_names = list(row.keys())
-
-                if (png_count >= sub_directory_threshold):
-                    sub_directory = str(int(sub_directory) + 1)
-                    if (int(sub_directory) + 1 > sub_directory_limit):
-                        raise OverflowError(f"Subdirectories with indexes greater than the sub directory limit ({sub_directory_limit}) are trying to be created.")
-                    for i in range(len(str(sub_directory_limit))-len(sub_directory)):
-                        if (len(sub_directory) < len(str(sub_directory_limit))):
-                            sub_directory = "0" + sub_directory
-                    png_count = 0
-
-                # Save all images for parameter set, add grid if toggled for that image
-                flist, size_list = wise_view_query.downloadWiseViewData(PNG_DIRECTORY + "\\" + sub_directory, scale_factor=SCALE, addGrid=ADDGRID, gridCount=GRIDCOUNT, gridType=GRIDTYPE, gridColor=GRIDCOLOR)
-                png_count += len(flist)
-
-                is_partial_cutout = False
-                for size in size_list:
-                    width, height = size
-                    if (width != height):
-                        is_partial_cutout = True
-                        break
-
-                if (display_printouts):
-                    if (is_partial_cutout and ignore_partial_cutouts):
-                        if (UI is None):
-                            print(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
-                        elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
-                    else:
-                        if (UI is None):
-                            print(f"Row {count} out of {total_data_rows} has been downloaded.")
-                        elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Row {count} out of {total_data_rows} has been downloaded.")
-
-                data_field_names = []
-                for i in range(len(flist)):
-                    data_field_names.append("f" + str(i + 1))
-
-                if (not is_partial_cutout or not ignore_partial_cutouts):
-                    data_list.append(Data(data_field_names, flist))
-                    metadata_list.append(Metadata(metadata_field_names, row_metadata))
-                else:
-                    ignored_data_list.append(Data(data_field_names, flist))
-                    ignored_metadata_list.append(Metadata(["Original Row: ", *metadata_field_names], [count, *row_metadata]))
-
-        if (len(ignored_data_list) != 0):
-            self.generateIgnoredTargetsCSV(ignored_data_list, ignored_metadata_list)
-        elif(os.path.exists("ignored-targets.csv")):
-            os.remove("ignored-targets.csv")
-
+                        ignored_data_list.append(data)
+                        ignored_metadata_list.append(metadata)
+                    UI.canSafelyQuit = True
+                png_count = 0
+                self.saveState(dataset_filename, data_list, metadata_list, png_count, self.wise_view_queries)
+            ignored_targets_csv_filename = f"ignored-targets_chunk_{chunk_num}.csv"
+            if (len(ignored_data_list) != 0):
+                self.generateIgnoredTargetsCSV(ignored_targets_csv_filename, ignored_data_list, ignored_metadata_list)
+            elif(os.path.exists(ignored_targets_csv_filename)):
+                os.remove(ignored_targets_csv_filename)
+        self.deleteState(dataset_filename)
         return data_list, metadata_list
 
 import UserInterface

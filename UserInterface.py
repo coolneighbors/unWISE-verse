@@ -71,14 +71,24 @@ class UserInterface:
         self.center_window(self.window)
         self.window.mainloop()
 
-    def quit(self):
-        if(self.saveSession.get()):
-            self.session.save(self)
-            print("Session saved.")
+    def quit(self, display=True):
+        if(display):
+            self.updateConsole("Attempting to quit...")
+        if(self.canSafelyQuit):
+            print("Quitting...")
+            if (self.saveSession.get()):
+                self.session.save(self)
+                if(display):
+                    print("Session saved.")
+            else:
+                self.session.delete()
+            self.window.destroy()
+            self.window.quit()
+            raise KeyboardInterrupt
         else:
-            self.session.delete()
+            self.window.after_idle(self.quit, False)
 
-        self.window.destroy()
+
 
     def configure_login_window(self, window, title, rows, cols, background_color):
         '''
@@ -251,6 +261,8 @@ class UserInterface:
         self.gridColor = (128,0,0)
 
         self.session = Session(self)
+
+        self.canSafelyQuit = True
         
 
     def frameInit(self):
