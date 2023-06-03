@@ -372,8 +372,9 @@ class CN_Dataset(Zooniverse_Dataset):
         if (MAXBRIGHT < MINBRIGHT):
             raise ValueError(f"MAXBRIGHT ({MAXBRIGHT}) is less than MINBRIGHT ({MINBRIGHT})")
 
-        # set WV parameters to RA and DEC
+        # Set WiseView parameters
         wise_view_query = WiseViewQuery.WiseViewQuery(RA=RA, DEC=DEC, size=SIZE, minbright=MINBRIGHT, maxbright=MAXBRIGHT, window=1.5)
+
         return wise_view_query
 
     def generateDataAndMetadata(self, row, index, png_count, sub_directory_path, wise_view_queries):
@@ -507,9 +508,6 @@ class CN_Dataset(Zooniverse_Dataset):
         # Return whether the save state file exists
         return os.path.exists(save_state_filename)
 
-    def processChunk(self, chunk_number):
-        pass
-
     def getNextSubDirectory(self, directories, sub_directory_limit, UI=None):
         sub_directory_values = []
 
@@ -629,30 +627,38 @@ class CN_Dataset(Zooniverse_Dataset):
                     bunch_size = 25
 
                     # Create a process pool to generate the wise view queries
-                    pool = mp.Pool()
                     for i in range(0, len(chunk_rows), bunch_size):
                         if (i + bunch_size > len(chunk_rows)):
                             bunch_size = len(chunk_rows) - i
                         if (UI is None):
                             print(f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}")
                         elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(
-                                f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}")
+                            UI.updateConsole(f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}")
 
                         # Get the bunch of rows to be processed
                         bunch = chunk_rows[i:i + bunch_size]
 
+                        # Define an error callback for the wise view query creation threads
+                        def error_callback(e):
+                            print(f"Error in WiseViewQuery creation thread: {e}")
+
+                        # Create a process pool to generate the wise view queries
+                        pool = mp.Pool()
+
                         # Create a list of processes to generate the wise view queries
-                        processes = [pool.apply_async(self.generateRowWiseViewQuery, args=(row,)) for row in bunch]
+                        processes = [pool.apply_async(self.generateRowWiseViewQuery, args=(row,), error_callback=error_callback) for row in bunch]
+
+                        # Close the process pool
+                        pool.close()
+
+                        # Wait for the processes to finish
+                        pool.join()
 
                         # Get the wise view queries from the processes
                         bunch_wise_view_queries = [p.get() for p in processes]
 
                         # Add the wise view queries to the overall wise view queries list
                         wise_view_queries.extend(bunch_wise_view_queries)
-
-                    # Close the process pool
-                    pool.close()
 
                     # Save the state
                     self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
@@ -734,7 +740,6 @@ class CN_Dataset(Zooniverse_Dataset):
 
                     # Check if the current sub_directory has reached the sub_directory_threshold, and if it has update sub_directory and png_count
                     png_count, sub_directory = self.handleSubDirectoryOverflow(png_count, sub_directory, sub_directory_threshold, sub_directory_limit)
-
                     # Save the state
                     self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
 
