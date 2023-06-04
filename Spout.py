@@ -229,6 +229,8 @@ class Spout:
         """
 
         dataset = CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=self.display_printouts, UI=self.UI)
+        if (self.UI.exitRequested):
+            return
         if(enable_strict_manifest):
             self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
         else:
@@ -265,8 +267,9 @@ class Spout:
             Just to prevent wasteful redundancy, I implemented a way to ask the user if they are supposed to overwrite
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
-
         dataset = CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=display_printouts, UI=UI)
+        if (UI.exitRequested):
+            return
         if (enable_strict_manifest):
             Defined_Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
         else:
@@ -387,8 +390,17 @@ class Spout:
         -----
 
         """
-        subject_set.add(subjects)
-        subject_set.save()
+        chunk_size = 1000
+        # for the number of subjects in the subject set, add the subjects to the subject set in chunks of chunk_size
+        for i in range(0, len(subjects), chunk_size):
+            chunk_subjects = subjects[i:i + chunk_size]
+            subject_set.add(chunk_subjects)
+            if (self.UI is None):
+                print("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.")
+            subject_set.save()
+
 
         if(self.display_printouts):
             if(self.UI is None):

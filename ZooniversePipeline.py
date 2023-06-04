@@ -88,10 +88,11 @@ def generateManifest(UI):
     if (UI.printProgress.get()):
         UI.updateConsole("Generate Manifest: ")
     Spout.Spout.generate_manifest_file(manifest,metadata_targets, display_printouts=UI.printProgress.get(), UI=UI)
-    if (UI.printProgress.get()):
-        now = datetime.now()
-        UI.updateConsole(f"Pipeline ended at: {now}")
-        UI.updateConsole("---------------------------------")
+    if(not UI.exitRequested):
+        if (UI.printProgress.get()):
+            now = datetime.now()
+            UI.updateConsole(f"Pipeline ended at: {now}")
+            UI.updateConsole("---------------------------------")
 
 def publishToZooniverse(UI):
     """

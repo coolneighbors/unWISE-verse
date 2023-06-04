@@ -5,6 +5,7 @@ Created on Mon Jun 13 10:14:59 2022
 @author: Noah Schapera
 """
 import os
+import sys
 import threading
 from tkinter import ttk
 import tkinter as tk
@@ -75,16 +76,23 @@ class UserInterface:
         if(display):
             self.updateConsole("Attempting to quit...")
         if(self.canSafelyQuit):
-            print("Quitting...")
+            self.exitRequested = True
             if (self.saveSession.get()):
                 self.session.save(self)
                 if(display):
                     print("Session saved.")
             else:
                 self.session.delete()
-            self.window.destroy()
-            self.window.quit()
-            raise KeyboardInterrupt
+
+            def destroy_window(window):
+                for thread in threading.enumerate():
+                    if(thread != threading.main_thread() and thread != threading.current_thread()):
+                        thread.join()
+                window.quit()
+
+
+            # Create a thread to wait for all threads to finish and then destroy the window
+            threading.Thread(target=destroy_window, args=(self.window,)).start()
         else:
             self.window.after_idle(self.quit, False)
 
@@ -265,6 +273,8 @@ class UserInterface:
         self.canSafelyQuit = True
 
         self.performingState = False
+
+        self.exitRequested = False
         
 
     def frameInit(self):

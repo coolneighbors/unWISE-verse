@@ -46,8 +46,8 @@ class Dataset():
                 A list of Data objects.
             metadata_list : List of Metadata objects, optional
                 A list of Metadata objects.
-            require_uniform_fields : A boolean determining whether to require all data and metadata objects to have the
-            exact same field names
+            require_uniform_fields : A boolean determining whether to require all data objects to have the exact same
+            field names and requires all metadata objects to have the exact same field names
 
         Notes
         -----
@@ -61,7 +61,7 @@ class Dataset():
 
         if (len(self.metadata_list) == 0):
             for data in self.data_list:
-                self.metadata_list.append(Metadata(["!no_metadata"], [""]))
+                self.metadata_list.append(Metadata([f"{Metadata.privatization_symbol}no_metadata"], [""]))
 
         if(len(self.data_list) != len(self.metadata_list)):
             raise MismatchedDataAndMetadataError(self.data_list,self.metadata_list)
@@ -198,11 +198,17 @@ class Zooniverse_Dataset(Dataset):
         data_list, metadata_list = self.generateDataAndMetadataLists(dataset_filename, ignore_partial_cutouts, display_printouts, UI)
         super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
 
+        self.display("Dataset created.", display_printouts, UI)
+
+    def display(self, text, display_printouts=False, UI=None):
         if (display_printouts):
             if (UI is None):
-                print("Dataset created.")
+                print(text)
             elif (isinstance(UI, UserInterface.UserInterface)):
-                UI.updateConsole("Dataset created.")
+                try:
+                    UI.updateConsole(text)
+                except(RuntimeError):
+                    print(text)
 
     def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
         data_list = []
@@ -247,19 +253,10 @@ class Zooniverse_Dataset(Dataset):
                         is_partial_cutout = True
                         break
 
-                if (display_printouts):
-                    if (is_partial_cutout and ignore_partial_cutouts):
-                        if (UI is None):
-                            print(
-                                f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
-                        elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(
-                                f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
-                    else:
-                        if (UI is None):
-                            print(f"Row {count} out of {total_data_rows} has been downloaded.")
-                        elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Row {count} out of {total_data_rows} has been downloaded.")
+                if (is_partial_cutout and ignore_partial_cutouts):
+                    self.display(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.", display_printouts, UI)
+                else:
+                    self.display(f"Row {count} out of {total_data_rows} has been downloaded.", display_printouts, UI)
 
                 data_field_names = []
                 for i in range(len(flist)):
@@ -519,10 +516,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 for c in str(sub_directory_limit):
                     sub_directory_name_form += "0"
                 if (not self.given_directory_warning):
-                    if (UI is None):
-                        warnings.warn(f"Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}")
-                    elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Warning: Sub-directory name '{sub_directory_name}' is not of the form: {sub_directory_name_form}")
+                    self.display(f"Warning: Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}", True, UI)
                     self.given_directory_warning = True
 
         max_value = max(sub_directory_values, default=-1)
@@ -561,13 +555,13 @@ class CN_Dataset(Zooniverse_Dataset):
 
         # Initialize the sub-directory values
         sub_directory_limit = 9999
-        sub_directory_threshold = 100
+        sub_directory_threshold = 1000
 
         # Initialize the png count
         png_count = 0
 
         # Initialize the size of chunks to be processed
-        chunk_size = 10
+        chunk_size = 1000
 
         # Initialize whether partial cutouts are to be ignored in the dataset
         if(UI is not None):
@@ -608,32 +602,32 @@ class CN_Dataset(Zooniverse_Dataset):
                     data_list, metadata_list, png_count, sub_directory, wise_view_queries = self.loadState(dataset_filename)
                     current_row_index = len(data_list) - 1
                     current_chunk_index = math.floor(current_row_index / chunk_size)
+                    print(current_chunk_index, chunk_index)
                     if(current_chunk_index > chunk_index):
                         continue
 
                 # Display that the chunk is being processed
-                if (UI is None):
-                    print(f"Downloading chunk {chunk_index}: ")
-                elif (isinstance(UI, UserInterface.UserInterface)):
-                    UI.updateConsole(f"Downloading chunk {chunk_index}: ")
+                self.display(f"Downloading chunk {chunk_index}: ", display_printouts, UI)
+
 
                 # Get the overall row index of the first row in the chunk
                 chunk_first_row_index = chunk_index * chunk_size
 
                 # If there are more wise view queries than the chunk's first row index, then the wise view queries are already generated for this chunk
                 if (chunk_first_row_index - len(wise_view_queries) >= 0):
-
                     # Set the bunch size for processing the wise view queries
                     bunch_size = 25
 
                     # Create a process pool to generate the wise view queries
                     for i in range(0, len(chunk_rows), bunch_size):
+                        try:
+                            if (UI.exitRequested):
+                                return [Data()], [Metadata()]
+                        except:
+                            pass
                         if (i + bunch_size > len(chunk_rows)):
                             bunch_size = len(chunk_rows) - i
-                        if (UI is None):
-                            print(f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}")
-                        elif (isinstance(UI, UserInterface.UserInterface)):
-                            UI.updateConsole(f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}")
+                        self.display(f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}", display_printouts, UI)
 
                         # Get the bunch of rows to be processed
                         bunch = chunk_rows[i:i + bunch_size]
@@ -664,13 +658,15 @@ class CN_Dataset(Zooniverse_Dataset):
                     self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
 
                     # Display that the image downloads are beginning for the chunk
-                    if (UI is None):
-                        print(f"Beginning image downloads for chunk {chunk_index}.")
-                    elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole(f"Beginning image downloads for chunk {chunk_index}.")
+                    self.display(f"Beginning image downloads for chunk {chunk_index}.", display_printouts, UI)
 
                 # Iterate through the rows in the chunk
                 for chunk_row_index, row in enumerate(chunk_rows):
+                    try:
+                        if (UI.exitRequested):
+                            return [Data()], [Metadata()]
+                    except:
+                        pass
 
                     # Get the row index of the current row being processed
                     row_index = chunk_index * chunk_size + chunk_row_index
@@ -699,10 +695,7 @@ class CN_Dataset(Zooniverse_Dataset):
                                     os.mkdir(os.path.join(PNG_DIRECTORY, f"Chunk_{n}"))
                                 else:
                                     # If the chunk directory already exists, display a warning
-                                    if (UI is None):
-                                        warnings.warn(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.")
-                                    elif (isinstance(UI, UserInterface.UserInterface)):
-                                        UI.updateConsole(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.")
+                                    self.display(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.", display_printouts, UI)
 
                         # Create the filepath for the current chunk directory
                         chunk_directory = os.path.join(PNG_DIRECTORY, f"Chunk_{chunk_index}")
@@ -727,15 +720,9 @@ class CN_Dataset(Zooniverse_Dataset):
                                 file_list.remove(".DS_Store")
                             if (len(file_list) != 0):
                                 if (len(file_list) == 1):
-                                    if (UI is None):
-                                        warnings.warn(f"The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}")
-                                    elif (isinstance(UI, UserInterface.UserInterface)):
-                                        UI.updateConsole(f"Warning: The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}")
+                                    self.display(f"The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}", display_printouts, UI)
                                 else:
-                                    if (UI is None):
-                                        warnings.warn(f"The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}")
-                                    elif (isinstance(UI, UserInterface.UserInterface)):
-                                        UI.updateConsole(f"Warning: The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}")
+                                    self.display(f"The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}", display_printouts, UI)
                                 self.given_file_warning = True
 
                     # Check if the current sub_directory has reached the sub_directory_threshold, and if it has update sub_directory and png_count
@@ -750,19 +737,12 @@ class CN_Dataset(Zooniverse_Dataset):
                     data, metadata, png_count, is_partial_cutout = self.generateDataAndMetadata(row, row_index, png_count, os.path.join(f"Chunk_{chunk_index}", sub_directory), wise_view_queries)
 
                     # Display that the current row has been ignored if it is a partial cutout and ignore_partial_cutouts is True
-                    if (display_printouts):
-                        if (is_partial_cutout and ignore_partial_cutouts):
-                            RA = float(row['RA'])
-                            DEC = float(row['DEC'])
-                            if (UI is None):
-                                print(f"Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
-                            elif (isinstance(UI, UserInterface.UserInterface)):
-                                UI.updateConsole(f"Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.")
-                        else:
-                            if (UI is None):
-                                print(f"Row {row_index + 1} out of {total_data_rows} has been downloaded.")
-                            elif (isinstance(UI, UserInterface.UserInterface)):
-                                UI.updateConsole(f"Row {row_index + 1} out of {total_data_rows} has been downloaded.")
+                    if (is_partial_cutout and ignore_partial_cutouts):
+                        RA = float(row['RA'])
+                        DEC = float(row['DEC'])
+                        self.display("Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.", display_printouts, UI)
+                    else:
+                        self.display(f"Row {row_index + 1} out of {total_data_rows} has been downloaded.",display_printouts, UI)
 
                     # Check if the current row is a partial cutout and if ignore_partial_cutouts is True
                     if (not is_partial_cutout or not ignore_partial_cutouts):
@@ -792,8 +772,15 @@ class CN_Dataset(Zooniverse_Dataset):
                 self.generateIgnoredTargetsCSV(ignored_targets_csv_filename, ignored_data_list, ignored_metadata_list)
             elif(os.path.exists(ignored_targets_csv_filename)):
                 os.remove(ignored_targets_csv_filename)
-        # Delete the state
-        self.deleteState(dataset_filename)
+        # If the UI has requested an exit near the end of processing DO NOT delete the state, this is most likely an
+        # accidental exit and the user will want to resume.
+        try:
+            if(not UI.exitRequested):
+                # Delete the state
+                self.deleteState(dataset_filename)
+        except:
+            # Delete the state
+            self.deleteState(dataset_filename)
 
         # Return the data and metadata lists
         return data_list, metadata_list
