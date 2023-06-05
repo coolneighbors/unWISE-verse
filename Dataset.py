@@ -12,6 +12,7 @@ from copy import copy
 from statistics import mean
 import warnings
 import platform
+import time as clock
 
 import astropy
 from astropy import time
@@ -473,34 +474,34 @@ class CN_Dataset(Zooniverse_Dataset):
         return data, metadata, png_count, is_partial_cutout
 
 
-    def saveState(self, dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries):
+    def saveState(self, dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries):
         # Create the save state file name based on the dataset filename
-        save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+        save_state_filename = os.path.splitext(os.path.basename(dataset_filename))[0] + "_save_state.pkl"
 
         # Save the data and metadata lists to a pickle file
         with open(save_state_filename, 'wb') as save_state_file:
-            pickle.dump([data_list, metadata_list, png_count, sub_directory, wise_view_queries], save_state_file)
+            pickle.dump([data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries], save_state_file)
 
     def loadState(self, dataset_filename):
         # Create the save state file name based on the dataset filename
-        save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+        save_state_filename = os.path.splitext(os.path.basename(dataset_filename))[0] + "_save_state.pkl"
 
         # Load the data and metadata lists from a pickle file
         with open(save_state_filename, 'rb') as save_state_file:
-            data_list, metadata_list, png_count, sub_directory, wise_view_queries = pickle.load(save_state_file)
+            data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries = pickle.load(save_state_file)
 
-        return data_list, metadata_list, png_count, sub_directory, wise_view_queries
+        return data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries
 
     def deleteState(self, dataset_filename):
         # Create a save state file name based on the dataset filename
-        save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+        save_state_filename = os.path.splitext(os.path.basename(dataset_filename))[0] + "_save_state.pkl"
 
         # Delete the save state file
         os.remove(save_state_filename)
 
     def stateExists(self, dataset_filename):
         # Create a save state file name based on the dataset filename
-        save_state_filename = os.path.basename(dataset_filename) + "_save_state.pkl"
+        save_state_filename = os.path.splitext(os.path.basename(dataset_filename))[0] + "_save_state.pkl"
 
         # Return whether the save state file exists
         return os.path.exists(save_state_filename)
@@ -543,8 +544,7 @@ class CN_Dataset(Zooniverse_Dataset):
         return png_count, sub_directory
 
     def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
-        # TODO: Service Error Success: {'message': 'Service Unavailable'}
-        # TODO: Test upload has some empty subject images
+
         # Initialize the data and metadata lists
         data_list = []
         metadata_list = []
@@ -577,13 +577,14 @@ class CN_Dataset(Zooniverse_Dataset):
 
         # Begin processing the dataset file
         with open(dataset_filename, newline='') as dataset_file:
-
             # Create a csv reader for the dataset file and get all its rows
             reader = csv.DictReader(dataset_file)
             all_rows = [row for row in reader]
 
             # Get the number of chunks to be processed
             total_chunks = math.ceil(len(all_rows) / chunk_size)
+
+            time_per_row = 0
 
             # Iterate through the chunks
             for chunk_index in range(total_chunks):
@@ -599,10 +600,9 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 # Check if a save state exists for the dataset and if it does, load it.
                 if (self.stateExists(dataset_filename)):
-                    data_list, metadata_list, png_count, sub_directory, wise_view_queries = self.loadState(dataset_filename)
+                    data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries = self.loadState(dataset_filename)
                     current_row_index = len(data_list) - 1
                     current_chunk_index = math.floor(current_row_index / chunk_size)
-                    print(current_chunk_index, chunk_index)
                     if(current_chunk_index > chunk_index):
                         continue
 
@@ -619,6 +619,8 @@ class CN_Dataset(Zooniverse_Dataset):
                     bunch_size = 25
 
                     # Create a process pool to generate the wise view queries
+                    # Initialize the start time
+                    wise_view_queries_start_time = clock.time()
                     for i in range(0, len(chunk_rows), bunch_size):
                         try:
                             if (UI.exitRequested):
@@ -654,11 +656,15 @@ class CN_Dataset(Zooniverse_Dataset):
                         # Add the wise view queries to the overall wise view queries list
                         wise_view_queries.extend(bunch_wise_view_queries)
 
+                    wise_view_queries_end_time = clock.time()
+                    wise_view_queries_time = wise_view_queries_end_time - wise_view_queries_start_time
+
                     # Save the state
-                    self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
+                    self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries)
 
                     # Display that the image downloads are beginning for the chunk
                     self.display(f"Beginning image downloads for chunk {chunk_index}.", display_printouts, UI)
+
 
                 # Iterate through the rows in the chunk
                 for chunk_row_index, row in enumerate(chunk_rows):
@@ -673,11 +679,12 @@ class CN_Dataset(Zooniverse_Dataset):
 
                     # Check if a save state exists for the dataset and if it does, load it.
                     if (self.stateExists(dataset_filename)):
-                        data_list, metadata_list, png_count, sub_directory, wise_view_queries = self.loadState(dataset_filename)
+                        data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries = self.loadState(dataset_filename)
                         loaded_row_index = len(data_list) - 1
                         if(row_index <= loaded_row_index):
                             continue
 
+                    row_time_start = clock.time()
                     # Get the PNG_DIRECTORY from the row
                     PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
 
@@ -708,7 +715,7 @@ class CN_Dataset(Zooniverse_Dataset):
                             sub_directory = self.getNextSubDirectory(directories, sub_directory_limit, UI)
 
                         # Save the state
-                        self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
+                        self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries)
 
                         # If a non-png directory is found, display a warning. Unless the user has already been warned.
                         if (not self.given_file_warning):
@@ -728,7 +735,7 @@ class CN_Dataset(Zooniverse_Dataset):
                     # Check if the current sub_directory has reached the sub_directory_threshold, and if it has update sub_directory and png_count
                     png_count, sub_directory = self.handleSubDirectoryOverflow(png_count, sub_directory, sub_directory_threshold, sub_directory_limit)
                     # Save the state
-                    self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
+                    self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries)
 
                     # Begin to generate the data and metadata for the current row and disable the ability to safely quit
                     UI.canSafelyQuit = False
@@ -740,7 +747,7 @@ class CN_Dataset(Zooniverse_Dataset):
                     if (is_partial_cutout and ignore_partial_cutouts):
                         RA = float(row['RA'])
                         DEC = float(row['DEC'])
-                        self.display("Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.", display_printouts, UI)
+                        self.display(f"Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.", display_printouts, UI)
                     else:
                         self.display(f"Row {row_index + 1} out of {total_data_rows} has been downloaded.",display_printouts, UI)
 
@@ -751,20 +758,72 @@ class CN_Dataset(Zooniverse_Dataset):
                         metadata_list.append(metadata)
 
                         # Save the state
-                        self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
+                        self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries)
                     else:
                         # Add the data and metadata to the ignored lists if the row is a partial cutout and ignore_partial_cutouts is True
                         ignored_data_list.append(data)
                         ignored_metadata_list.append(metadata)
 
+                    row_time_end = clock.time()
+                    row_time = row_time_end - row_time_start
+
+                    row_time = row_time + (wise_view_queries_time / chunk_size)
+
+                    if (time_per_row == 0):
+                        time_per_row = row_time
+                    else:
+                        time_per_row = (time_per_row + row_time) / 2
+
+                    # Save the state
+                    self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries)
+
                     # Enable the ability to safely quit
                     UI.canSafelyQuit = True
+
+                # Save the state
+                self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries)
+
+                # Estimate the time remaining for the remaining rows
+                remaining_rows = total_data_rows - (row_index + 1)
+                time_remaining = remaining_rows * time_per_row
+
+                # Depending on how many seconds are remaining, display the time remaining in a different format
+                def formatTimeRemaining(time_remaining):
+                    MINUTE = 60
+                    HOUR = 60 * MINUTE
+                    DAY = 24 * HOUR
+                    WEEK = 7 * DAY
+                    MONTH = 30.44 * DAY
+                    YEAR = 365.24 * DAY
+
+                    time_units = [
+                        (YEAR, 'year'),
+                        (MONTH, 'month'),
+                        (WEEK, 'week'),
+                        (DAY, 'day'),
+                        (HOUR, 'hour'),
+                        (MINUTE, 'minute'),
+                        (1, 'second')
+                    ]
+
+                    parts = []
+                    for unit, unit_name in time_units:
+                        if time_remaining >= unit:
+                            num_units = int(time_remaining / unit)
+                            time_remaining -= num_units * unit
+                            parts.append(f"{num_units} {unit_name}{'' if num_units == 1 else 's'}")
+
+                    return ', '.join(parts)
+
+                # Display that the chunk has been completed and the estimated time remaining
+                if(chunk_index != total_chunks - 1):
+                    self.display(f"Chunk {chunk_index + 1} out of {total_chunks} has been completed. \nThe estimated time remaining: {formatTimeRemaining(time_remaining)}.", display_printouts, UI)
 
                 # Reset the png_count
                 png_count = 0
 
                 # Save the state
-                self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, wise_view_queries)
+                self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries)
 
             # Generate the CSV files for the ignored data and metadata
             ignored_targets_csv_filename = f"ignored-targets_chunk_{chunk_index}.csv"

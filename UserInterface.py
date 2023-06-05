@@ -250,7 +250,6 @@ class UserInterface:
         self.subjectSetID = tk.StringVar(value="")
         self.targetFile = tk.StringVar(value="")
         self.manifestFile = tk.StringVar(value="")
-        self.metadataTargetFile = tk.StringVar(value="metadata-target.csv")
         self.scaleFactor = tk.StringVar(value="12")
         self.FOV = tk.StringVar(value="120")
         self.pngDirectory = tk.StringVar(value="pngs")
@@ -697,7 +696,9 @@ class UserInterface:
                                  f"{Data.Metadata.privatization_symbol}GRIDTYPE": self.gridType.get(),
                                  f"{Data.Metadata.privatization_symbol}GRIDCOLOR": str(self.gridColor)}
 
-                # Creates metadata-target.csv
+                # Creates metadata-target csv file
+                metadata_target_filename = self.targetFile.get().split('.')[0] + '-metadata-target.csv'
+                self.metadataTargetFile = tk.StringVar(value=metadata_target_filename)
                 ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
 
                 if (self.state.get() == 'f'):
