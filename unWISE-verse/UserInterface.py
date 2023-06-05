@@ -74,7 +74,10 @@ class UserInterface:
 
     def quit(self, display=True):
         if(display):
-            self.updateConsole("Attempting to quit...")
+            try:
+                self.updateConsole("Attempting to quit...")
+            except AttributeError:
+                pass
         if(self.canSafelyQuit):
             self.exitRequested = True
             if (self.saveSession.get()):
