@@ -5,6 +5,7 @@ Created on Mon Jun 13 10:14:59 2022
 @author: Noah Schapera
 """
 import os
+import sys
 import threading
 from tkinter import ttk
 import tkinter as tk
@@ -71,14 +72,34 @@ class UserInterface:
         self.center_window(self.window)
         self.window.mainloop()
 
-    def quit(self):
-        if(self.saveSession.get()):
-            self.session.save(self)
-            print("Session saved.")
-        else:
-            self.session.delete()
+    def quit(self, display=True):
+        if(display):
+            try:
+                self.updateConsole("Attempting to quit...")
+            except AttributeError:
+                pass
+        if(self.canSafelyQuit):
+            self.exitRequested = True
+            if (self.saveSession.get()):
+                self.session.save(self)
+                if(display):
+                    print("Session saved.")
+            else:
+                self.session.delete()
 
-        self.window.destroy()
+            def destroy_window(window):
+                for thread in threading.enumerate():
+                    if(thread != threading.main_thread() and thread != threading.current_thread()):
+                        thread.join()
+                window.quit()
+
+
+            # Create a thread to wait for all threads to finish and then destroy the window
+            threading.Thread(target=destroy_window, args=(self.window,)).start()
+        else:
+            self.window.after_idle(self.quit, False)
+
+
 
     def configure_login_window(self, window, title, rows, cols, background_color):
         '''
@@ -232,7 +253,6 @@ class UserInterface:
         self.subjectSetID = tk.StringVar(value="")
         self.targetFile = tk.StringVar(value="")
         self.manifestFile = tk.StringVar(value="")
-        self.metadataTargetFile = tk.StringVar(value="metadata-target.csv")
         self.scaleFactor = tk.StringVar(value="12")
         self.FOV = tk.StringVar(value="120")
         self.pngDirectory = tk.StringVar(value="pngs")
@@ -251,6 +271,12 @@ class UserInterface:
         self.gridColor = (128,0,0)
 
         self.session = Session(self)
+
+        self.canSafelyQuit = True
+
+        self.performingState = False
+
+        self.exitRequested = False
         
 
     def frameInit(self):
@@ -658,32 +684,43 @@ class UserInterface:
         return not isError
 
     def performState(self):
-        if (self.verifyInputs()):
-            if(self.printProgress.get()):
-                now = datetime.now()
-                self.updateConsole(f"Started pipeline at: {now}")
-            metadata_dict = {f"{Data.Metadata.privatization_symbol}ADDGRID": int(self.addGrid.get()),
-                             f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(),
-                             "FOV": self.FOV.get(),
-                             f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY": self.pngDirectory.get(),
-                             f"{Data.Metadata.privatization_symbol}MINBRIGHT": self.minBright.get(),
-                             f"{Data.Metadata.privatization_symbol}MAXBRIGHT": self.maxBright.get(),
-                             f"{Data.Metadata.privatization_symbol}GRIDCOUNT": int(self.gridCount.get()),
-                             f"{Data.Metadata.privatization_symbol}GRIDTYPE": self.gridType.get(),
-                             f"{Data.Metadata.privatization_symbol}GRIDCOLOR": str(self.gridColor)}
+        if(not self.performingState):
+            if (self.verifyInputs()):
+                if(self.printProgress.get()):
+                    now = datetime.now()
+                    self.updateConsole(f"Started pipeline at: {now}")
+                metadata_dict = {f"{Data.Metadata.privatization_symbol}ADDGRID": int(self.addGrid.get()),
+                                 f"{Data.Metadata.privatization_symbol}SCALE": self.scaleFactor.get(),
+                                 "FOV": self.FOV.get(),
+                                 f"{Data.Metadata.privatization_symbol}PNG_DIRECTORY": self.pngDirectory.get(),
+                                 f"{Data.Metadata.privatization_symbol}MINBRIGHT": self.minBright.get(),
+                                 f"{Data.Metadata.privatization_symbol}MAXBRIGHT": self.maxBright.get(),
+                                 f"{Data.Metadata.privatization_symbol}GRIDCOUNT": int(self.gridCount.get()),
+                                 f"{Data.Metadata.privatization_symbol}GRIDTYPE": self.gridType.get(),
+                                 f"{Data.Metadata.privatization_symbol}GRIDCOLOR": str(self.gridColor)}
 
-            # Creates metadata-target.csv
-            ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
+                # Creates metadata-target csv file
+                metadata_target_filename = self.targetFile.get().split('.')[0] + '-metadata-target.csv'
+                self.metadataTargetFile = tk.StringVar(value=metadata_target_filename)
+                ZooniversePipeline.mergeTargetsAndMetadata(self.targetFile.get(), metadata_dict, self.metadataTargetFile.get())
 
-            if (self.state.get() == 'f'):
-                ZooniversePipeline.fullPipeline(self)
-            elif (self.state.get() == 'm'):
-                ZooniversePipeline.generateManifest(self)
-            elif (self.state.get() == 'u'):
-                ZooniversePipeline.publishToZooniverse(self)
-            # Calls interface to determine how the program should run.
-            else:
-                print("You broke the pipeline :(")
+                if (self.state.get() == 'f'):
+                    self.performingState = True
+                    ZooniversePipeline.fullPipeline(self)
+                    self.performingState = False
+                elif (self.state.get() == 'm'):
+                    self.performingState = True
+                    ZooniversePipeline.generateManifest(self)
+                    self.performingState = False
+                elif (self.state.get() == 'u'):
+                    self.performingState = True
+                    ZooniversePipeline.publishToZooniverse(self)
+                    self.performingState = False
+                # Calls interface to determine how the program should run.
+                else:
+                    print("You broke the pipeline :(")
+        else:
+            self.updateConsole("Pipeline is already active. Please wait until it is finished.")
 
     def updateConsole(self, new_text):
         self.console_scrolled_text.config(state=tk.NORMAL)

@@ -352,6 +352,44 @@ class Data:
         else:
             raise NonExistentFieldError(field_name)
 
+    def getFieldValue(self, field_name):
+        """
+        Gets the value of the field name if it exists in the Data object.
+
+        Returns
+        -------
+        field_value: Any
+            The value of the field name in the Data object.
+
+        """
+
+        if(field_name in self.field_names):
+            index = self.field_names.index(field_name)
+            return self.values[index]
+        else:
+            raise NonExistentFieldError(field_name)
+
+    def hasField(self, field_name):
+        """
+        Checks if the Data object has a field name.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being checked.
+
+        Returns
+        -------
+        has_field : bool
+            A boolean representing whether or not the Data object has the field name.
+
+        Notes
+        -----
+
+        """
+
+        return field_name in self.field_names
+
 class Metadata(Data):
 
     privatization_symbol = "#"
@@ -410,6 +448,30 @@ class Metadata(Data):
         field_names_with_private_symbol = self.getAdjustedFieldNames()
         metadata_dict = {"name": field_names_with_private_symbol[index], "value": self.values[index]}
         return metadata_dict
+
+    def getFieldValue(self, field_name):
+        """
+        Gets the value of the field name if it exists in the Metadata object.
+
+        Returns
+        -------
+        metadata_dict : dict
+            A dictionary of the form, {"name" : str, "value" : Any}
+            An index of the Metadata object, from 0 to len(Metadata object)-1.
+        Notes
+        -----
+
+        """
+
+        if(field_name in self.field_names):
+            index = self.field_names.index(field_name)
+            return self.values[index]
+        elif(Metadata.privatization_symbol + field_name in self.field_names):
+            index = self.field_names.index(Metadata.privatization_symbol + field_name)
+            return self.values[index]
+        else:
+            raise NonExistentFieldError(field_name)
+
 
     def __str__(self):
         """

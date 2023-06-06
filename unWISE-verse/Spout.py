@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Friday, June 3rd
-Refactored on Tuesday, June 7th
+Created on Friday, June 3rd, 2022
+Refactored on Tuesday, June 7th, 2022
+Added further subject set manipulation on Tuesday, June 6th, 2023
 
 @authors: Noah Schapera, Austin Humphreys
 """
@@ -29,7 +30,7 @@ class SubjectSetRetrievalError(Exception):
 
 class Spout:
 
-    def __init__(self, project_identifier, login, display_printouts = False, UI = None):
+    def __init__(self, project_identifier, login, display_printouts=False, UI=None):
 
         """
         Initializes a Spout object, a data pipeline between local files and any accessible Zooniverse project.
@@ -201,7 +202,7 @@ class Spout:
         else:
             raise SubjectSetIdentificationError(subject_set_identifier)
 
-    def generate_manifest(self, manifest_filename, dataset_filename, overwrite_automatically = None, enable_strict_manifest = False):
+    def generate_manifest(self, manifest_filename, dataset_filename, overwrite_automatically=None, enable_strict_manifest=False):
         """
         Generates a manifest CSV file used to compile the information necessary to send over subjects to a subject set
         associated with the linked project.
@@ -229,13 +230,15 @@ class Spout:
         """
 
         dataset = CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=self.display_printouts, UI=self.UI)
+        if (self.UI.exitRequested):
+            return
         if(enable_strict_manifest):
             self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
         else:
             self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
 
     @classmethod
-    def generate_manifest_file(cls, manifest_filename, dataset_filename, overwrite_automatically = None, enable_strict_manifest = False, display_printouts = False, UI = None):
+    def generate_manifest_file(cls, manifest_filename, dataset_filename, overwrite_automatically=None, enable_strict_manifest=False, display_printouts=False, UI=None):
         """
         Generates a manifest CSV file used to compile the information necessary to send over subjects to a subject set
         associated with the linked project.
@@ -265,14 +268,15 @@ class Spout:
             Just to prevent wasteful redundancy, I implemented a way to ask the user if they are supposed to overwrite
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
-
         dataset = CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=display_printouts, UI=UI)
+        if (UI.exitRequested):
+            return
         if (enable_strict_manifest):
             Defined_Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
         else:
             Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
 
-    def generate_subject_data_dicts(self,manifest_filename):
+    def generate_subject_data_dicts(self, manifest_filename):
         """
         Generates a list of dictionaries containing the master manifest header elements as keys and the elements of
         the lines of the manifest (all except the first line which itself is the manifest header) as the associated data
@@ -311,14 +315,14 @@ class Spout:
                 subject_data_dicts.append(subject_data_dict)
         return subject_data_dicts
 
-    def generate_subjects_from_subject_data_dicts(self,subject_data_dicts):
+    def generate_subjects_from_subject_data_dicts(self, subject_data_dicts):
         """
         Generates a list of subjects from a list of subject data dictionaries.
 
         Parameters
         ----------
-            subject_data_dicts : str
-                A full path filename of the manifest CSV to be overwritten or created.
+            subject_data_dicts : list
+                A list of subject data dictionaries
 
         Returns
         -------
@@ -387,8 +391,21 @@ class Spout:
         -----
 
         """
-        subject_set.add(subjects)
-        subject_set.save()
+
+        if (not isinstance(subjects, list)):
+            subjects = [subjects]
+
+        chunk_size = 1000
+        # for the number of subjects in the subject set, add the subjects to the subject set in chunks of chunk_size
+        for i in range(0, len(subjects), chunk_size):
+            chunk_subjects = subjects[i:i + chunk_size]
+            subject_set.add(chunk_subjects)
+            if (self.UI is None):
+                print("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.")
+            subject_set.save()
+
 
         if(self.display_printouts):
             if(self.UI is None):
@@ -396,7 +413,7 @@ class Spout:
             elif (isinstance(self.UI, UserInterface.UserInterface)):
                 self.UI.updateConsole("Subject set filled.")
         
-    def publish_existing_manifest(self,subject_set,manifest_filename):
+    def publish_existing_manifest(self, subject_set, manifest_filename):
         """
         Publishes data to Zooniverse subject set based on an existing manifest file, and existing data in the local png folder.
 
@@ -425,7 +442,7 @@ class Spout:
             elif (isinstance(self.UI, UserInterface.UserInterface)):
                 self.UI.updateConsole("The existing manifest subjects have been published to Zooniverse.")
 
-    def upload_data_to_subject_set(self,subject_set, manifest_filename,dataset_filename, overwrite_automatically = None, enable_strict_manifest = False):
+    def upload_data_to_subject_set(self, subject_set, manifest_filename, dataset_filename, overwrite_automatically=None, enable_strict_manifest=False):
         """
         Uploads data from a dataset CSV, generates a manifest CSV, generates subjects from the manifest CSV, and then
         fills the subject set associated with the linked project on Zooniverse.
@@ -473,3 +490,109 @@ class Spout:
                 print("Subjects uploaded to Zooniverse.")
             elif (isinstance(self.UI, UserInterface.UserInterface)):
                 self.UI.updateConsole("Subjects uploaded to Zooniverse.")
+
+    def delete_subjects(self, subject_set, subjects):
+        """
+        Deletes the specified subjects from the given subject set.
+
+        Parameters
+        ----------
+            subject_set : SubjectSet object
+                A SubjectSet object associated to the linked project on Zooniverse.
+
+            subjects : List of Subject objects
+                A list of Subject objects to be deleted from the subject set.
+        """
+
+        if (not isinstance(subjects, list)):
+            subjects = [subjects]
+
+        subject_set.remove(subjects)
+        if(self.display_printouts):
+            if(self.UI is None):
+                print("Specified subjects were deleted.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("Specified subjects were deleted.")
+
+    def modify_subject_metadata_field_name(self, subjects, current_field_name, new_field_name):
+        """
+        Modifies the metadata field of the subjects in the subject set.
+
+        Parameters
+        ----------
+        subject_set : SubjectSet object
+            A SubjectSet object associated to the linked project on Zooniverse.
+        subjects : List of Subject objects
+            A list of Subject objects to be modified.
+        current_field_name : str
+            The name of the metadata field to be modified.
+        new_field_name : str
+            The new name of the metadata field to be modified.
+        """
+
+        if(not isinstance(subjects, list)):
+            subjects = [subjects]
+
+        for subject in subjects:
+            try:
+                subject.metadata[new_field_name] = subject.metadata[current_field_name]
+                del subject.metadata[current_field_name]
+                subject.save()
+
+            except KeyError:
+                if(self.display_printouts):
+                    if(self.UI is None):
+                        print(f"Specified subject {subject} was not modified. The current field name, {current_field_name}, does not exist.")
+                    elif (isinstance(self.UI, UserInterface.UserInterface)):
+                        self.UI.updateConsole(f"Specified subjects were not modified. The current field name, {current_field_name}, does not exist.")
+
+        if (self.display_printouts):
+            if (self.UI is None):
+                print("Specified subjects were modified.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("Specified subjects were modified.")
+
+    def modify_subject_metadata_field_value(self, subjects, field_name, new_field_value):
+        """
+        Modifies the metadata field value of the subjects in the subject set.
+
+        Parameters
+        ----------
+        subjects : List of Subject objects
+            A list of Subject objects to be modified.
+        field_name : str
+            The name of the metadata field to be modified.
+        new_field_value : str
+            The new value of the metadata field to be modified.
+        """
+
+        if(not isinstance(new_field_value, str)):
+            try:
+                new_field_value = str(new_field_value)
+            except:
+                if(self.display_printouts):
+                    if(self.UI is None):
+                        print("Specified subjects were not modified. The new field value could not be converted to a string.")
+                    elif (isinstance(self.UI, UserInterface.UserInterface)):
+                        self.UI.updateConsole("Specified subjects were not modified. The new field value could not be converted to a string.")
+
+        if (not isinstance(subjects, list)):
+            subjects = [subjects]
+
+        for subject in subjects:
+            try:
+                subject.metadata[field_name] = new_field_value
+                subject.save()
+
+            except KeyError:
+                if(self.display_printouts):
+                    if(self.UI is None):
+                        print(f"Specified subject {subject} was not modified. The current field name, {field_name}, does not exist.")
+                    elif (isinstance(self.UI, UserInterface.UserInterface)):
+                        self.UI.updateConsole(f"Specified subjects were not modified. The current field name, {field_name}, does not exist.")
+
+        if (self.display_printouts):
+            if (self.UI is None):
+                print("Specified subjects were modified.")
+            elif (isinstance(self.UI, UserInterface.UserInterface)):
+                self.UI.updateConsole("Specified subjects were modified.")

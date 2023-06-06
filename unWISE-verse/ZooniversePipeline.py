@@ -74,8 +74,7 @@ def fullPipeline(UI):
 
 def generateManifest(UI):
     """
-    Just downloads png's and generates manifest.
-    Not sure exactly what the use case for this is, but it seemed like a good thing to add
+    Downloads pngs and generates a manifest.
 
     Returns
     -------
@@ -87,15 +86,16 @@ def generateManifest(UI):
     manifest = UI.manifestFile.get()
     if (UI.printProgress.get()):
         UI.updateConsole("Generate Manifest: ")
-    Spout.Spout.generate_manifest_file(manifest,metadata_targets, display_printouts=UI.printProgress.get(), UI=UI)
-    if (UI.printProgress.get()):
-        now = datetime.now()
-        UI.updateConsole(f"Pipeline ended at: {now}")
-        UI.updateConsole("---------------------------------")
+    Spout.Spout.generate_manifest_file(manifest, metadata_targets, display_printouts=UI.printProgress.get(), UI=UI)
+    if(not UI.exitRequested):
+        if (UI.printProgress.get()):
+            now = datetime.now()
+            UI.updateConsole(f"Pipeline ended at: {now}")
+            UI.updateConsole("---------------------------------")
 
 def publishToZooniverse(UI):
     """
-    Publishes an existing manifest and previously downloaded png's to Zooniverse'
+    Publishes an existing manifest and previously downloaded pngs to Zooniverse.
 
     Returns
     -------
@@ -114,11 +114,11 @@ def publishToZooniverse(UI):
     if (UI.printProgress.get()):
         UI.updateConsole("Publish Existing Manifest: ")
 
-    login= Login.Login(username,pwd)
+    login = Login.Login(username, pwd)
     workingSpout = Spout.Spout(projectID, login, UI.printProgress.get(), UI)
     
-    subject_set=workingSpout.get_subject_set(subjectSetID)
-    workingSpout.publish_existing_manifest(subject_set,manifest)
+    subject_set = workingSpout.get_subject_set(subjectSetID)
+    workingSpout.publish_existing_manifest(subject_set, manifest)
     if (workingSpout.display_printouts):
         now = datetime.now()
         UI.updateConsole(f"Pipeline ended at: {now}")
@@ -135,9 +135,9 @@ def mergeTargetsAndMetadata(targets_filename, metadata_dict, metadata_targets_fi
 
     metadata_field_names = list(metadata_dict.keys())
 
-    metadata_targets_field_names = [*targets_field_names,*metadata_field_names]
+    metadata_targets_field_names = [*targets_field_names, *metadata_field_names]
     # If these field names are in the targets file, it will override any assigned values by the UI
-    allowed_duplicate_field_names = [f'{Metadata.privatization_symbol}MINBRIGHT',f'{Metadata.privatization_symbol}MAXBRIGHT']
+    allowed_duplicate_field_names = [f'{Metadata.privatization_symbol}MINBRIGHT', f'{Metadata.privatization_symbol}MAXBRIGHT']
 
     if(len(set(metadata_targets_field_names)) != len(metadata_targets_field_names)):
         for allowed_duplicate_field_name in allowed_duplicate_field_names:
