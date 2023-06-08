@@ -8,6 +8,7 @@ Added further subject set manipulation on Tuesday, June 6th, 2023
 """
 
 import csv
+import os
 import time
 from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
@@ -347,9 +348,19 @@ class Spout:
                 right_side_of_key = key[split_index:]
                 if (left_side_of_key == "f"):
                     try:
+                        # Test if the value can be converted to an integer
                         int(right_side_of_key)
-                        subject.add_location(subject_data_dict[key])
-                    except:
+                        # Check if the filepath exists, if not, raise an error to avoid uploading a subject with missing images.
+                        if(os.path.exists(subject_data_dict[key])):
+                            subject.add_location(subject_data_dict[key])
+                        else:
+                            if(subject_data_dict[key] != ""):
+                                if (self.UI is None):
+                                    print(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
+                                elif (isinstance(self.UI, UserInterface.UserInterface)):
+                                    self.UI.updateConsole(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
+                                raise FileNotFoundError(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
+                    except ValueError:
                         pass
                 else:
                     metadata_dict[key] = subject_data_dict[key]
@@ -362,7 +373,7 @@ class Spout:
             subjects.append(subject)
             subject_count += 1
             if (self.UI is None):
-                print("Created subject: " + str(subject.id))
+                print(f"Created subject {subject_count} out of {subject_total}: " + str(subject.id))
             elif (isinstance(self.UI, UserInterface.UserInterface)):
                 self.UI.updateConsole(f"Created subject {subject_count} out of {subject_total}: " + str(subject.id))
 
