@@ -49,13 +49,27 @@ class SubjectDiscriminator(Discriminator):
         metadata = Metadata.createFromDictionary(subject.metadata)
         return metadata
 
-    def findValidSubjects(self, functional_condition, *field_names, display_printouts=True):
+    def findValidSubjects(self, functional_condition, *field_names, subject_as_input=False, display_printouts=True):
         valid_subject_list = []
-        for index, metadata in enumerate(self.metadata_list):
-            if self.isValid(metadata, functional_condition, *field_names):
-                valid_subject_list.append(self.subject_list[metadata.getFieldValue("index")])
-                if display_printouts:
-                    print(f"Subject with TARGET ID {metadata.getFieldValue('TARGET ID')} is valid.")
-            if(display_printouts and index % 1000 == 0):
-                print(f"Checked {index} subjects.")
+        if(subject_as_input):
+            if(len(field_names) != 0):
+                print("WARNING: You have requested a subject as input, but you have also passed in metadata field names. The metadata field names will be ignored.")
+            for index, subject in enumerate(self.subject_list):
+                result = functional_condition(subject)
+                if(result is None):
+                    raise Exception("The functional condition returned None. This is not allowed.")
+                if(result):
+                    valid_subject_list.append(subject)
+                    if display_printouts:
+                        print(f"Subject with TARGET ID {subject.metadata['TARGET ID']} is valid.")
+                if (display_printouts and index % 1000 == 0 and index != 0):
+                    print(f"Checked {index} subjects.")
+        else:
+            for index, metadata in enumerate(self.metadata_list):
+                if self.isValid(metadata, functional_condition, *field_names):
+                    valid_subject_list.append(self.subject_list[metadata.getFieldValue("index")])
+                    if display_printouts:
+                        print(f"Subject with TARGET ID {metadata.getFieldValue('TARGET ID')} is valid.")
+                if(display_printouts and index % 1000 == 0 and index != 0):
+                    print(f"Checked {index} subjects.")
         return valid_subject_list
