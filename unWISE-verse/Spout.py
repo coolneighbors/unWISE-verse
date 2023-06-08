@@ -359,6 +359,7 @@ class Spout:
                                     print(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
                                 elif (isinstance(self.UI, UserInterface.UserInterface)):
                                     self.UI.updateConsole(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
+                                self.UI.performingState = False
                                 raise FileNotFoundError(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
                     except ValueError:
                         pass
