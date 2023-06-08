@@ -596,3 +596,38 @@ class Spout:
                 print("Specified subjects were modified.")
             elif (isinstance(self.UI, UserInterface.UserInterface)):
                 self.UI.updateConsole("Specified subjects were modified.")
+
+
+    def subject_has_images(self, subject):
+        """
+        Checks if the subject has images.
+
+        Parameters
+        ----------
+        subject : Subject object
+            A Subject object to be checked.
+
+        Returns
+        -------
+        bool
+            True if the subject has images, False otherwise.
+        """
+
+        return len(subject.raw['locations']) != 0
+
+    def subject_has_metadata(self, subject):
+        """
+        Checks if the subject has metadata.
+
+        Parameters
+        ----------
+        subject : Subject object
+            A Subject object to be checked.
+
+        Returns
+        -------
+        bool
+            True if the subject has metadata, False otherwise.
+        """
+
+        return subject.metadata != {}

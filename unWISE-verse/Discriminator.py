@@ -32,9 +32,13 @@ class Discriminator:
 class SubjectDiscriminator(Discriminator):
     def __init__(self, subject_set):
         self.subject_list = []
-        for subject in subject_set.subjects:
+        for index, subject in enumerate(subject_set.subjects):
+            if (index % 1000 == 0 and index != 0):
+                print(f"Added {index} subjects to list.")
             self.subject_list.append(subject)
+
         self.metadata_list = []
+        print(f"Length of Subject List: {len(self.subject_list)}")
         for index, subject in enumerate(self.subject_list):
             subject_metadata = self.getSubjectMetadata(subject)
             subject_metadata.addField("index", index)
@@ -45,9 +49,13 @@ class SubjectDiscriminator(Discriminator):
         metadata = Metadata.createFromDictionary(subject.metadata)
         return metadata
 
-    def findValidSubjects(self, functional_condition, *field_names):
+    def findValidSubjects(self, functional_condition, *field_names, display_printouts=True):
         valid_subject_list = []
-        for metadata in self.metadata_list:
+        for index, metadata in enumerate(self.metadata_list):
             if self.isValid(metadata, functional_condition, *field_names):
                 valid_subject_list.append(self.subject_list[metadata.getFieldValue("index")])
+                if display_printouts:
+                    print(f"Subject with TARGET ID {metadata.getFieldValue('TARGET ID')} is valid.")
+            if(display_printouts and index % 1000 == 0):
+                print(f"Checked {index} subjects.")
         return valid_subject_list
