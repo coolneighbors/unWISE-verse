@@ -6,3 +6,4 @@
 *.pkl
 *.pickle
 *.lnk
+.DS_Store
