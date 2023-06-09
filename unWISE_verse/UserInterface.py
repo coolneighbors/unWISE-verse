@@ -13,10 +13,11 @@ from copy import copy
 from tkinter import filedialog as fd
 from tkinter.scrolledtext import ScrolledText
 from tkinter.colorchooser import askcolor
-import ZooniversePipeline
 import pickle
-import Data
 from datetime import datetime
+
+import unWISE_verse
+
 
 '''
 full pipeline:
@@ -40,6 +41,16 @@ publish to zooniverse:
     manifest name
     
 '''
+
+def display(text, display_printouts=False, UI=None):
+    if (display_printouts):
+        if (UI is None):
+            print(text)
+        elif (isinstance(UI, unWISE_verse.UserInterface.UserInterface)):
+            try:
+                UI.updateConsole(text)
+            except(RuntimeError):
+                print(text)
     
 class UserInterface:
     
@@ -880,3 +891,7 @@ class Session():
     def delete(self):
         if(self.savedSessionExists()):
             os.remove("saved_session.pickle")
+
+from unWISE_verse import ZooniversePipeline
+
+from unWISE_verse import Data

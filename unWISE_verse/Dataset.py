@@ -20,10 +20,13 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 import multiprocessing as mp
 from flipbooks import WiseViewQuery, unWISEQuery
-import MetadataPointers
 
+from unWISE_verse.UserInterface import display
 
-from Data import Data, Metadata
+from unWISE_verse import MetadataPointers
+
+from unWISE_verse import Data
+
 
 # Errors
 class NonUniformFieldsError(Exception):
@@ -62,7 +65,7 @@ class Dataset():
 
         if (len(self.metadata_list) == 0):
             for data in self.data_list:
-                self.metadata_list.append(Metadata([f"{Metadata.privatization_symbol}no_metadata"], [""]))
+                self.metadata_list.append(Data.Metadata([f"{Data.Metadata.privatization_symbol}no_metadata"], [""]))
 
         if(len(self.data_list) != len(self.metadata_list)):
             raise MismatchedDataAndMetadataError(self.data_list,self.metadata_list)
@@ -148,13 +151,13 @@ class Dataset():
         with open(data_csv_filename, newline='') as data_file:
             reader = csv.DictReader(data_file)
             for row in reader:
-                data_list.append(Data.createFromDictionary(row))
+                data_list.append(Data.Data.createFromDictionary(row))
 
         metadata_list = []
         with open(metadata_csv_filename, newline='') as metadata_file:
             reader = csv.DictReader(metadata_file)
             for row in reader:
-                metadata_list.append(Metadata.createFromDictionary(row))
+                metadata_list.append(Data.Metadata.createFromDictionary(row))
 
         return Dataset(data_list,metadata_list)
 
@@ -199,17 +202,7 @@ class Zooniverse_Dataset(Dataset):
         data_list, metadata_list = self.generateDataAndMetadataLists(dataset_filename, ignore_partial_cutouts, display_printouts, UI)
         super(Zooniverse_Dataset, self).__init__(data_list, metadata_list, require_uniform_fields)
 
-        self.display("Dataset created.", display_printouts, UI)
-
-    def display(self, text, display_printouts=False, UI=None):
-        if (display_printouts):
-            if (UI is None):
-                print(text)
-            elif (isinstance(UI, UserInterface.UserInterface)):
-                try:
-                    UI.updateConsole(text)
-                except(RuntimeError):
-                    print(text)
+        display("Dataset created.", display_printouts, UI)
 
     def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
         data_list = []
@@ -255,20 +248,20 @@ class Zooniverse_Dataset(Dataset):
                         break
 
                 if (is_partial_cutout and ignore_partial_cutouts):
-                    self.display(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.", display_printouts, UI)
+                    display(f"Row {count} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.", display_printouts, UI)
                 else:
-                    self.display(f"Row {count} out of {total_data_rows} has been downloaded.", display_printouts, UI)
+                    display(f"Row {count} out of {total_data_rows} has been downloaded.", display_printouts, UI)
 
                 data_field_names = []
                 for i in range(len(flist)):
                     data_field_names.append("f" + str(i + 1))
 
                 if (not is_partial_cutout or not ignore_partial_cutouts):
-                    data_list.append(Data(data_field_names, flist))
-                    metadata_list.append(Metadata(metadata_field_names, row_metadata))
+                    data_list.append(Data.Data(data_field_names, flist))
+                    metadata_list.append(Data.Metadata(metadata_field_names, row_metadata))
                 else:
-                    ignored_data_list.append(Data(data_field_names, flist))
-                    ignored_metadata_list.append(Metadata(["Original Row: ", *metadata_field_names], [count, *row_metadata]))
+                    ignored_data_list.append(Data.Data(data_field_names, flist))
+                    ignored_metadata_list.append(Data.Metadata(["Original Row: ", *metadata_field_names], [count, *row_metadata]))
 
         if (len(ignored_data_list) != 0):
             self.generateIgnoredTargetsCSV(ignored_data_list, ignored_metadata_list)
@@ -351,21 +344,21 @@ class CN_Dataset(Zooniverse_Dataset):
         MINBRIGHT = None
         MAXBRIGHT = None
 
-        if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == "" or row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+        if (row[f'{Data.Metadata.privatization_symbol}MINBRIGHT'] == "" or row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
 
             unWISE_query = unWISEQuery.unWISEQuery(ra=RA, dec=DEC, size=SIZE, bands=12)
             brightness_clip = unWISE_query.calculateBrightnessClip(mode="percentile", percentile=97.5)
-            if (row[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
+            if (row[f'{Data.Metadata.privatization_symbol}MINBRIGHT'] == ""):
                 MINBRIGHT = brightness_clip[0]
             else:
-                MINBRIGHT = float(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
-            if (row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+                MINBRIGHT = float(row[f'{Data.Metadata.privatization_symbol}MINBRIGHT'])
+            if (row[f'{Data.Metadata.privatization_symbol}MAXBRIGHT'] == ""):
                 MAXBRIGHT = brightness_clip[1]
             else:
-                MAXBRIGHT = float(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+                MAXBRIGHT = float(row[f'{Data.Metadata.privatization_symbol}MAXBRIGHT'])
         else:
-            MINBRIGHT = int(row[f'{Metadata.privatization_symbol}MINBRIGHT'])
-            MAXBRIGHT = int(row[f'{Metadata.privatization_symbol}MAXBRIGHT'])
+            MINBRIGHT = int(row[f'{Data.Metadata.privatization_symbol}MINBRIGHT'])
+            MAXBRIGHT = int(row[f'{Data.Metadata.privatization_symbol}MAXBRIGHT'])
 
         if (MAXBRIGHT < MINBRIGHT):
             raise ValueError(f"MAXBRIGHT ({MAXBRIGHT}) is less than MINBRIGHT ({MINBRIGHT})")
@@ -379,15 +372,15 @@ class CN_Dataset(Zooniverse_Dataset):
         # Get metadata
         RA = float(row['RA'])
         DEC = float(row['DEC'])
-        PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
-        ADDGRID = int(row[f'{Metadata.privatization_symbol}ADDGRID'])
-        GRIDCOUNT = int(row[f'{Metadata.privatization_symbol}GRIDCOUNT'])
-        SCALE = int(row[f'{Metadata.privatization_symbol}SCALE'])
+        PNG_DIRECTORY = row[f'{Data.Metadata.privatization_symbol}PNG_DIRECTORY']
+        ADDGRID = int(row[f'{Data.Metadata.privatization_symbol}ADDGRID'])
+        GRIDCOUNT = int(row[f'{Data.Metadata.privatization_symbol}GRIDCOUNT'])
+        SCALE = int(row[f'{Data.Metadata.privatization_symbol}SCALE'])
         FOV = float(row['FOV'])
 
-        GRIDTYPE = row[f'{Metadata.privatization_symbol}GRIDTYPE']
+        GRIDTYPE = row[f'{Data.Metadata.privatization_symbol}GRIDTYPE']
         RGB_list = []
-        for s in row[f'{Metadata.privatization_symbol}GRIDCOLOR'][1:][:-1].split(","):
+        for s in row[f'{Data.Metadata.privatization_symbol}GRIDCOLOR'][1:][:-1].split(","):
             RGB_list.append(int(s))
         GRIDCOLOR = tuple(RGB_list)
 
@@ -395,8 +388,8 @@ class CN_Dataset(Zooniverse_Dataset):
         wise_view_query = wise_view_queries[index]
 
         # Assign the metadata values to the row
-        row[f'{Metadata.privatization_symbol}MINBRIGHT'] = wise_view_query.wise_view_parameters["minbright"]
-        row[f'{Metadata.privatization_symbol}MAXBRIGHT'] = wise_view_query.wise_view_parameters["maxbright"]
+        row[f'{Data.Metadata.privatization_symbol}MINBRIGHT'] = wise_view_query.wise_view_parameters["minbright"]
+        row[f'{Data.Metadata.privatization_symbol}MAXBRIGHT'] = wise_view_query.wise_view_parameters["maxbright"]
         row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
         row['Data Source'] = f"[unWISE](+tab+http://unwise.me/)"
         row['unWISE Pixel Scale'] = f"~{WiseViewQuery.unWISE_pixel_scale} arcseconds per pixel"
@@ -468,8 +461,8 @@ class CN_Dataset(Zooniverse_Dataset):
         for i in range(len(flist)):
             data_field_names.append("f" + str(i + 1))
 
-        data = Data(data_field_names, flist)
-        metadata = Metadata(metadata_field_names, row_metadata)
+        data = Data.Data(data_field_names, flist)
+        metadata = Data.Metadata(metadata_field_names, row_metadata)
 
         return data, metadata, png_count, is_partial_cutout
 
@@ -517,7 +510,7 @@ class CN_Dataset(Zooniverse_Dataset):
                 for c in str(sub_directory_limit):
                     sub_directory_name_form += "0"
                 if (not self.given_directory_warning):
-                    self.display(f"Warning: Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}", True, UI)
+                    display(f"Warning: Sub-directory name {sub_directory_name} is not of the form: {sub_directory_name_form}", True, UI)
                     self.given_directory_warning = True
 
         max_value = max(sub_directory_values, default=-1)
@@ -607,7 +600,7 @@ class CN_Dataset(Zooniverse_Dataset):
                         continue
 
                 # Display that the chunk is being processed
-                self.display(f"Downloading chunk {chunk_index}: ", display_printouts, UI)
+                display(f"Downloading chunk {chunk_index}: ", display_printouts, UI)
 
 
                 # Get the overall row index of the first row in the chunk
@@ -624,12 +617,12 @@ class CN_Dataset(Zooniverse_Dataset):
                     for i in range(0, len(chunk_rows), bunch_size):
                         try:
                             if (UI.exitRequested):
-                                return [Data()], [Metadata()]
+                                return [Data.Data()], [Data.Metadata()]
                         except:
                             pass
                         if (i + bunch_size > len(chunk_rows)):
                             bunch_size = len(chunk_rows) - i
-                        self.display(f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}", display_printouts, UI)
+                        display(f"Generating WiseViewQueries for rows {chunk_first_row_index + i + 1} to {chunk_first_row_index + i + bunch_size}", display_printouts, UI)
 
                         # Get the bunch of rows to be processed
                         bunch = chunk_rows[i:i + bunch_size]
@@ -663,14 +656,14 @@ class CN_Dataset(Zooniverse_Dataset):
                     self.saveState(dataset_filename, data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries)
 
                     # Display that the image downloads are beginning for the chunk
-                    self.display(f"Beginning image downloads for chunk {chunk_index}.", display_printouts, UI)
+                    display(f"Beginning image downloads for chunk {chunk_index}.", display_printouts, UI)
 
 
                 # Iterate through the rows in the chunk
                 for chunk_row_index, row in enumerate(chunk_rows):
                     try:
                         if (UI.exitRequested):
-                            return [Data()], [Metadata()]
+                            return [Data.Data()], [Data.Metadata()]
                     except:
                         pass
 
@@ -686,7 +679,7 @@ class CN_Dataset(Zooniverse_Dataset):
 
                     row_time_start = clock.time()
                     # Get the PNG_DIRECTORY from the row
-                    PNG_DIRECTORY = row[f'{Metadata.privatization_symbol}PNG_DIRECTORY']
+                    PNG_DIRECTORY = row[f'{Data.Metadata.privatization_symbol}PNG_DIRECTORY']
 
 
                     # Check if the current index is the first index of the chunk
@@ -702,7 +695,7 @@ class CN_Dataset(Zooniverse_Dataset):
                                     os.mkdir(os.path.join(PNG_DIRECTORY, f"Chunk_{n}"))
                                 else:
                                     # If the chunk directory already exists, display a warning
-                                    self.display(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.", display_printouts, UI)
+                                    display(f"The Chunk_{n} directory already exists in {PNG_DIRECTORY}. This may cause issues.", display_printouts, UI)
 
                         # Create the filepath for the current chunk directory
                         chunk_directory = os.path.join(PNG_DIRECTORY, f"Chunk_{chunk_index}")
@@ -727,9 +720,9 @@ class CN_Dataset(Zooniverse_Dataset):
                                 file_list.remove(".DS_Store")
                             if (len(file_list) != 0):
                                 if (len(file_list) == 1):
-                                    self.display(f"The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}", display_printouts, UI)
+                                    display(f"The following file (or directory) was found in {chunk_directory} and does not belong: {', '.join(file_list)}", display_printouts, UI)
                                 else:
-                                    self.display(f"The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}", display_printouts, UI)
+                                    display(f"The following files (or directories) were found in {chunk_directory} and do not belong: {', '.join(file_list)}", display_printouts, UI)
                                 self.given_file_warning = True
 
                     # Check if the current sub_directory has reached the sub_directory_threshold, and if it has update sub_directory and png_count
@@ -747,9 +740,9 @@ class CN_Dataset(Zooniverse_Dataset):
                     if (is_partial_cutout and ignore_partial_cutouts):
                         RA = float(row['RA'])
                         DEC = float(row['DEC'])
-                        self.display(f"Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.", display_printouts, UI)
+                        display(f"Row {row_index + 1} out of {total_data_rows} in {dataset_filename} with (RA,DEC): ({RA}, {DEC}) is a partial cutout and has been ignored.", display_printouts, UI)
                     else:
-                        self.display(f"Row {row_index + 1} out of {total_data_rows} has been downloaded.",display_printouts, UI)
+                        display(f"Row {row_index + 1} out of {total_data_rows} has been downloaded.",display_printouts, UI)
 
                     # Check if the current row is a partial cutout and if ignore_partial_cutouts is True
                     if (not is_partial_cutout or not ignore_partial_cutouts):
@@ -817,7 +810,7 @@ class CN_Dataset(Zooniverse_Dataset):
 
                 # Display that the chunk has been completed and the estimated time remaining
                 if(chunk_index != total_chunks - 1):
-                    self.display(f"Chunk {chunk_index + 1} out of {total_chunks} has been completed. \nThe estimated time remaining: {formatTimeRemaining(time_remaining)}.", display_printouts, UI)
+                    display(f"Chunk {chunk_index + 1} out of {total_chunks} has been completed. \nThe estimated time remaining: {formatTimeRemaining(time_remaining)}.", display_printouts, UI)
 
                 # Reset the png_count
                 png_count = 0
@@ -843,5 +836,3 @@ class CN_Dataset(Zooniverse_Dataset):
 
         # Return the data and metadata lists
         return data_list, metadata_list
-
-import UserInterface
