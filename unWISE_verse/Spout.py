@@ -16,7 +16,6 @@ from panoptes_client import Panoptes, Project, SubjectSet, Subject
 import unWISE_verse
 
 from unWISE_verse import Manifest
-from Manifest import Manifest, Defined_Manifest
 
 from unWISE_verse import Dataset
 
@@ -239,9 +238,9 @@ class Spout:
         if (self.UI.exitRequested):
             return
         if(enable_strict_manifest):
-            self.manifest = Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
+            self.manifest = Manifest.Defined_Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
         else:
-            self.manifest = Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
+            self.manifest = Manifest.Manifest(dataset, manifest_filename, overwrite_automatically,display_printouts=self.display_printouts,UI=self.UI)
 
     @classmethod
     def generate_manifest_file(cls, manifest_filename, dataset_filename, overwrite_automatically=None, enable_strict_manifest=False, display_printouts=False, UI=None):
@@ -278,9 +277,9 @@ class Spout:
         if (UI.exitRequested):
             return
         if (enable_strict_manifest):
-            Defined_Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
+            Manifest.Defined_Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
         else:
-            Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
+            Manifest.Manifest(dataset, manifest_filename, overwrite_automatically, display_printouts=display_printouts, UI=UI)
 
     def generate_subject_data_dicts(self, manifest_filename):
         """
