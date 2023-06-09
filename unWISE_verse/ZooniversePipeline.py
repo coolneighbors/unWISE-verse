@@ -9,10 +9,9 @@ from datetime import datetime
 
 from panoptes_client import Panoptes
 
-import Spout
-import Login
-from Data import Metadata
-
+from unWISE_verse import Spout
+from unWISE_verse import Login
+from unWISE_verse import Data
 
 class NonUniqueFieldsError(Exception):
     def __init__(self, field_names):
@@ -137,7 +136,7 @@ def mergeTargetsAndMetadata(targets_filename, metadata_dict, metadata_targets_fi
 
     metadata_targets_field_names = [*targets_field_names, *metadata_field_names]
     # If these field names are in the targets file, it will override any assigned values by the UI
-    allowed_duplicate_field_names = [f'{Metadata.privatization_symbol}MINBRIGHT', f'{Metadata.privatization_symbol}MAXBRIGHT']
+    allowed_duplicate_field_names = [f'{Data.Metadata.privatization_symbol}MINBRIGHT', f'{Data.Metadata.privatization_symbol}MAXBRIGHT']
 
     if(len(set(metadata_targets_field_names)) != len(metadata_targets_field_names)):
         for allowed_duplicate_field_name in allowed_duplicate_field_names:
@@ -151,17 +150,17 @@ def mergeTargetsAndMetadata(targets_filename, metadata_dict, metadata_targets_fi
     metadata_targets_dict_list = []
     for targets_dict in targets_dict_list:
         metadata_targets_dict_list.append(targets_dict | metadata_dict)
-        if(metadata_dict[f'{Metadata.privatization_symbol}MINBRIGHT'] == ""):
+        if(metadata_dict[f'{Data.Metadata.privatization_symbol}MINBRIGHT'] == ""):
             try:
-                if(targets_dict[f'{Metadata.privatization_symbol}MINBRIGHT'] != ""):
-                    metadata_targets_dict_list[-1][f'{Metadata.privatization_symbol}MINBRIGHT'] = targets_dict[f'{Metadata.privatization_symbol}MINBRIGHT']
+                if(targets_dict[f'{Data.Metadata.privatization_symbol}MINBRIGHT'] != ""):
+                    metadata_targets_dict_list[-1][f'{Data.Metadata.privatization_symbol}MINBRIGHT'] = targets_dict[f'{Data.Metadata.privatization_symbol}MINBRIGHT']
             except KeyError:
                 pass
 
-        if(metadata_dict[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+        if(metadata_dict[f'{Data.Metadata.privatization_symbol}MAXBRIGHT'] == ""):
             try:
-                if(targets_dict[f'{Metadata.privatization_symbol}MAXBRIGHT'] != ""):
-                    metadata_targets_dict_list[-1][f'{Metadata.privatization_symbol}MAXBRIGHT'] = targets_dict[f'{Metadata.privatization_symbol}MAXBRIGHT']
+                if(targets_dict[f'{Data.Metadata.privatization_symbol}MAXBRIGHT'] != ""):
+                    metadata_targets_dict_list[-1][f'{Data.Metadata.privatization_symbol}MAXBRIGHT'] = targets_dict[f'{Data.Metadata.privatization_symbol}MAXBRIGHT']
             except KeyError:
                 pass
 

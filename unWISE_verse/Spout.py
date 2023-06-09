@@ -19,7 +19,8 @@ from unWISE_verse import Manifest
 from Manifest import Manifest, Defined_Manifest
 
 from unWISE_verse import Dataset
-from Dataset import Dataset, Zooniverse_Dataset, CN_Dataset
+
+from unWISE_verse.UserInterface import display
 
 
 # Errors
@@ -79,8 +80,8 @@ class Spout:
         self.manifest = None
         self.display_printouts = display_printouts
 
-        self.display(f"Project ID: {self.linked_project.id}", self.display_printouts, self.UI)
-        self.display(f"Project Slug: {self.linked_project.slug}", self.display_printouts, self.UI)
+        display(f"Project ID: {self.linked_project.id}", self.display_printouts, self.UI)
+        display(f"Project Slug: {self.linked_project.slug}", self.display_printouts, self.UI)
 
 
     def display(self, text, display_printouts=False, UI=None):
@@ -192,7 +193,7 @@ class Spout:
             for subject_set in self.linked_project.links.subject_sets:
                 subject_set.reload()
                 if(subject_set.raw["display_name"] == subject_set_identifier):
-                    self.display("Subject set retrieved from Zooniverse.", self.display_printouts, self.UI)
+                    display("Subject set retrieved from Zooniverse.", self.display_printouts, self.UI)
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
 
@@ -201,7 +202,7 @@ class Spout:
             for subject_set in self.linked_project.links.subject_sets:
                 subject_set.reload()
                 if (int(subject_set.id) == subject_set_identifier):
-                    self.display("Subject set retrieved from Zooniverse.", self.display_printouts, self.UI)
+                    display("Subject set retrieved from Zooniverse.", self.display_printouts, self.UI)
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
         else:
@@ -234,7 +235,7 @@ class Spout:
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
 
-        dataset = CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=self.display_printouts, UI=self.UI)
+        dataset = Dataset.CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=self.display_printouts, UI=self.UI)
         if (self.UI.exitRequested):
             return
         if(enable_strict_manifest):
@@ -273,7 +274,7 @@ class Spout:
             Just to prevent wasteful redundancy, I implemented a way to ask the user if they are supposed to overwrite
             an existing manifest if it finds a manifest at the provided full path filename of the manifest CSV.
         """
-        dataset = CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=display_printouts, UI=UI)
+        dataset = Dataset.CN_Dataset(dataset_filename, ignore_partial_cutouts=True, require_uniform_fields=False, display_printouts=display_printouts, UI=UI)
         if (UI.exitRequested):
             return
         if (enable_strict_manifest):
@@ -359,7 +360,7 @@ class Spout:
                             subject.add_location(subject_data_dict[key])
                         else:
                             if(subject_data_dict[key] != ""):
-                                self.display(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.", self.display_printouts, self.UI)
+                                display(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.", self.display_printouts, self.UI)
                                 self.UI.performingState = False
                                 raise FileNotFoundError(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
                     except ValueError:
@@ -374,9 +375,9 @@ class Spout:
             subject.save()
             subjects.append(subject)
             subject_count += 1
-            self.display(f"Created subject {subject_count} out of {subject_total}: " + str(subject.id), self.display_printouts, self.UI)
+            display(f"Created subject {subject_count} out of {subject_total}: " + str(subject.id), self.display_printouts, self.UI)
 
-        self.display("Subjects generated.", self.display_printouts, self.UI)
+        display("Subjects generated.", self.display_printouts, self.UI)
 
         return subjects
 
@@ -405,10 +406,10 @@ class Spout:
         for i in range(0, len(subjects), chunk_size):
             chunk_subjects = subjects[i:i + chunk_size]
             subject_set.add(chunk_subjects)
-            self.display("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.", self.display_printouts, self.UI)
+            display("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.", self.display_printouts, self.UI)
             subject_set.save()
 
-        self.display("Subject set filled.", self.display_printouts, self.UI)
+        display("Subject set filled.", self.display_printouts, self.UI)
         
     def publish_existing_manifest(self, subject_set, manifest_filename):
         """
@@ -433,7 +434,7 @@ class Spout:
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
 
-        self.display("The existing manifest subjects have been published to Zooniverse.", self.display_printouts, self.UI)
+        display("The existing manifest subjects have been published to Zooniverse.", self.display_printouts, self.UI)
 
     def upload_data_to_subject_set(self, subject_set, manifest_filename, dataset_filename, overwrite_automatically=None, enable_strict_manifest=False):
         """
@@ -477,7 +478,7 @@ class Spout:
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
         self.manifest = None
-        self.display("Subjects uploaded to Zooniverse.", self.display_printouts, self.UI)
+        display("Subjects uploaded to Zooniverse.", self.display_printouts, self.UI)
 
     def delete_subjects(self, subject_set, subjects):
         """
@@ -496,7 +497,7 @@ class Spout:
             subjects = [subjects]
 
         subject_set.remove(subjects)
-        self.display("Specified subjects were deleted.", self.display_printouts, self.UI)
+        display("Specified subjects were deleted.", self.display_printouts, self.UI)
 
 
     def modify_subject_metadata_field_name(self, subjects, current_field_name, new_field_name):
@@ -525,9 +526,9 @@ class Spout:
                 subject.save()
 
             except KeyError:
-                self.display(f"Specified subject {subject} was not modified. The current field name, {current_field_name}, does not exist.", self.display_printouts, self.UI)
+                display(f"Specified subject {subject} was not modified. The current field name, {current_field_name}, does not exist.", self.display_printouts, self.UI)
 
-        self.display("Specified subjects were modified.",self.display_printouts, self.UI)
+        display("Specified subjects were modified.",self.display_printouts, self.UI)
 
     def modify_subject_metadata_field_value(self, subjects, field_name, new_field_value):
         """
@@ -547,7 +548,7 @@ class Spout:
             try:
                 new_field_value = str(new_field_value)
             except:
-                self.display("Specified subjects were not modified. The new field value could not be converted to a string.", self.display_printouts, self.UI)
+                display("Specified subjects were not modified. The new field value could not be converted to a string.", self.display_printouts, self.UI)
 
         if (not isinstance(subjects, list)):
             subjects = [subjects]
@@ -558,8 +559,8 @@ class Spout:
                 subject.save()
 
             except KeyError:
-                self.display(f"Specified subject {subject} was not modified. The current field name, {field_name}, does not exist.", self.display_printouts, self.UI)
-        self.display("Specified subjects were modified.", self.display_printouts, self.UI)
+                display(f"Specified subject {subject} was not modified. The current field name, {field_name}, does not exist.", self.display_printouts, self.UI)
+        display("Specified subjects were modified.", self.display_printouts, self.UI)
 
 
     def subject_has_images(self, subject):

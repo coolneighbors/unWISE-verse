@@ -6,10 +6,9 @@ Created on Thursday, June 9th
 
 import csv
 import os
+import unWISE_verse
 from unWISE_verse import Header
-from Header import Header
-from unWISE_verse import UserInterface
-
+from unWISE_verse.UserInterface import display
 
 # Errors
 class InvalidHeaderError(Exception):
@@ -51,9 +50,9 @@ class Manifest:
 
         """
         
-        self.header = Header(dataset.data_field_names,dataset.metadata_field_names)
+        self.header = Header.Header(dataset.data_field_names,dataset.metadata_field_names)
         if (use_master_header):
-            master_header = Header.create_header_from_text_file("master_header.txt", delimiter)
+            master_header = Header.Header.create_header_from_text_file("master_header.txt", delimiter)
             if (master_header != self.header):
                 raise InvalidHeaderError(self.header, master_header)
 
@@ -127,7 +126,7 @@ class Manifest:
                             overwrite_manifest = False
                         else:
                             response = input("Invalid response, please type a valid response (y/n): ")
-                elif(isinstance(UI,UserInterface.UserInterface)):
+                elif(isinstance(UI, unWISE_verse.UserInterface.UserInterface)):
                     UI.open_overwrite_manifest_popup()
                     overwrite_manifest = UI.overwriteManifest.get()
             else:
@@ -142,29 +141,17 @@ class Manifest:
                 f = open(manifest_filename, 'w', newline='')
                 writer = csv.writer(f)
                 writer.writerow([*self.header.metadata_fields,*self.header.data_fields])
-                if(display_printouts):
-                    if(UI is None):
-                        print("Header created.")
-                    elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole("Header created.")
+                display("Header created.", display_printouts, UI)
                 for row in self.information_table:
                     writer.writerow(row)
                 f.close()
-                if(display_printouts):
-                    if(UI is None):
-                        print("Manifest generation complete.")
-                    elif (isinstance(UI, UserInterface.UserInterface)):
-                        UI.updateConsole("Manifest generation complete.")
+                display("Manifest generation complete.", display_printouts, UI)
             elif(".fits" in manifest_filename):
-                print("Currently no functionality for .fits files")
+                display("Currently no functionality for .fits files", display_printouts, UI)
             else:
                 raise InvalidManifestFileError(manifest_filename)
         else:
-            if (display_printouts):
-                if(UI is None):
-                    print("Existing manifest preserved.")
-                elif (isinstance(UI, UserInterface.UserInterface)):
-                    UI.updateConsole("Existing manifest preserved.")
+            display("Existing manifest preserved.", display_printouts, UI)
             
 
 
@@ -198,8 +185,6 @@ class Defined_Manifest(Manifest):
         """
 
         super(Defined_Manifest, self).__init__(dataset, manifest_filename, overwrite_automatically, True, delimiter, display_printouts, UI)
-
-
 
 
 

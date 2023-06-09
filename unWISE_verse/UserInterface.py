@@ -16,8 +16,7 @@ from tkinter.colorchooser import askcolor
 import pickle
 from datetime import datetime
 
-from unWISE_verse import ZooniversePipeline
-from unWISE_verse import Data
+import unWISE_verse
 
 
 '''
@@ -42,6 +41,16 @@ publish to zooniverse:
     manifest name
     
 '''
+
+def display(text, display_printouts=False, UI=None):
+    if (display_printouts):
+        if (UI is None):
+            print(text)
+        elif (isinstance(UI, unWISE_verse.UserInterface.UserInterface)):
+            try:
+                UI.updateConsole(text)
+            except(RuntimeError):
+                print(text)
     
 class UserInterface:
     
@@ -882,3 +891,7 @@ class Session():
     def delete(self):
         if(self.savedSessionExists()):
             os.remove("saved_session.pickle")
+
+from unWISE_verse import ZooniversePipeline
+
+from unWISE_verse import Data
