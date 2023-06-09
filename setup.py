@@ -8,7 +8,7 @@ setup(
     url='https://github.com/coolneighbors/unWISE-verse.git',
     author='Aaron Meisner',
     author_email='aaron.meisner@noirlab.edu',
-    packages=['unWISE-verse'],
+    packages=['unWISE_verse'],
     install_requires=requirements,
     version='1.1',
     license='MIT',
