@@ -20,10 +20,14 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 import multiprocessing as mp
 from flipbooks import WiseViewQuery, unWISEQuery
-import MetadataPointers
 
+import unWISE_verse
 
+from unWISE_verse import MetadataPointers
+
+from unWISE_verse import Data
 from Data import Data, Metadata
+
 
 # Errors
 class NonUniformFieldsError(Exception):
@@ -205,7 +209,7 @@ class Zooniverse_Dataset(Dataset):
         if (display_printouts):
             if (UI is None):
                 print(text)
-            elif (isinstance(UI, UserInterface.UserInterface)):
+            elif (isinstance(UI, unWISE_verse.UserInterface.UserInterface)):
                 try:
                     UI.updateConsole(text)
                 except(RuntimeError):

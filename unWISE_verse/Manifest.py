@@ -6,8 +6,10 @@ Created on Thursday, June 9th
 
 import csv
 import os
+from unWISE_verse import Header
 from Header import Header
-import UserInterface
+from unWISE_verse import UserInterface
+
 
 # Errors
 class InvalidHeaderError(Exception):

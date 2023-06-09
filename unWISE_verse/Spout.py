@@ -12,9 +12,15 @@ import os
 import time
 from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
+
+import unWISE_verse
+
+from unWISE_verse import Manifest
 from Manifest import Manifest, Defined_Manifest
+
+from unWISE_verse import Dataset
 from Dataset import Dataset, Zooniverse_Dataset, CN_Dataset
-import UserInterface
+
 
 # Errors
 class ProjectIdentificationError(Exception):
@@ -73,13 +79,19 @@ class Spout:
         self.manifest = None
         self.display_printouts = display_printouts
 
-        if(self.display_printouts):
-            if(self.UI is None):
-                print(f"Project ID: {self.linked_project.id}")
-                print(f"Project Slug: {self.linked_project.slug}")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                UI.updateConsole(f"Project ID: {self.linked_project.id}")
-                UI.updateConsole(f"Project Slug: {self.linked_project.slug}")
+        self.display(f"Project ID: {self.linked_project.id}", self.display_printouts, self.UI)
+        self.display(f"Project Slug: {self.linked_project.slug}", self.display_printouts, self.UI)
+
+
+    def display(self, text, display_printouts=False, UI=None):
+        if (display_printouts):
+            if (UI is None):
+                print(text)
+            elif (isinstance(UI, unWISE_verse.UserInterface.UserInterface)):
+                try:
+                    UI.updateConsole(text)
+                except(RuntimeError):
+                    print(text)
 
     def create_subject_set(self, display_name):
         """
@@ -180,11 +192,7 @@ class Spout:
             for subject_set in self.linked_project.links.subject_sets:
                 subject_set.reload()
                 if(subject_set.raw["display_name"] == subject_set_identifier):
-                    if(self.display_printouts):
-                        if(self.UI is None):
-                            print("Subject set retrieved from Zooniverse.")
-                        elif (isinstance(self.UI, UserInterface.UserInterface)):
-                            self.UI.updateConsole("Subject set retrieved from Zooniverse.")
+                    self.display("Subject set retrieved from Zooniverse.", self.display_printouts, self.UI)
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
 
@@ -193,11 +201,7 @@ class Spout:
             for subject_set in self.linked_project.links.subject_sets:
                 subject_set.reload()
                 if (int(subject_set.id) == subject_set_identifier):
-                    if(self.display_printouts):
-                        if (self.UI is None):
-                            print("Subject set retrieved from Zooniverse.")
-                        elif (isinstance(self.UI, UserInterface.UserInterface)):
-                            self.UI.updateConsole("Subject set retrieved from Zooniverse.")
+                    self.display("Subject set retrieved from Zooniverse.", self.display_printouts, self.UI)
                     return subject_set
             raise SubjectSetRetrievalError(subject_set_identifier)
         else:
@@ -355,10 +359,7 @@ class Spout:
                             subject.add_location(subject_data_dict[key])
                         else:
                             if(subject_data_dict[key] != ""):
-                                if (self.UI is None):
-                                    print(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
-                                elif (isinstance(self.UI, UserInterface.UserInterface)):
-                                    self.UI.updateConsole(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
+                                self.display(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.", self.display_printouts, self.UI)
                                 self.UI.performingState = False
                                 raise FileNotFoundError(f"Could not complete subject upload. The image file requested at {subject_data_dict[key]} does not exist.")
                     except ValueError:
@@ -373,17 +374,9 @@ class Spout:
             subject.save()
             subjects.append(subject)
             subject_count += 1
-            if (self.UI is None):
-                print(f"Created subject {subject_count} out of {subject_total}: " + str(subject.id))
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole(f"Created subject {subject_count} out of {subject_total}: " + str(subject.id))
+            self.display(f"Created subject {subject_count} out of {subject_total}: " + str(subject.id), self.display_printouts, self.UI)
 
-
-        if(self.display_printouts):
-            if(self.UI is None):
-                print("Subjects generated.")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole("Subjects generated.")
+        self.display("Subjects generated.", self.display_printouts, self.UI)
 
         return subjects
 
@@ -412,18 +405,10 @@ class Spout:
         for i in range(0, len(subjects), chunk_size):
             chunk_subjects = subjects[i:i + chunk_size]
             subject_set.add(chunk_subjects)
-            if (self.UI is None):
-                print("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.")
+            self.display("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.", self.display_printouts, self.UI)
             subject_set.save()
 
-
-        if(self.display_printouts):
-            if(self.UI is None):
-                print("Subject set filled.")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole("Subject set filled.")
+        self.display("Subject set filled.", self.display_printouts, self.UI)
         
     def publish_existing_manifest(self, subject_set, manifest_filename):
         """
@@ -448,11 +433,7 @@ class Spout:
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
 
-        if(self.display_printouts):
-            if(self.UI is None):
-                print("The existing manifest subjects have been published to Zooniverse.")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole("The existing manifest subjects have been published to Zooniverse.")
+        self.display("The existing manifest subjects have been published to Zooniverse.", self.display_printouts, self.UI)
 
     def upload_data_to_subject_set(self, subject_set, manifest_filename, dataset_filename, overwrite_automatically=None, enable_strict_manifest=False):
         """
@@ -496,12 +477,7 @@ class Spout:
         subjects = self.generate_subjects_from_subject_data_dicts(subject_data_dicts)
         self.fill_subject_set(subject_set, subjects)
         self.manifest = None
-
-        if(self.display_printouts):
-            if(self.UI is None):
-                print("Subjects uploaded to Zooniverse.")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole("Subjects uploaded to Zooniverse.")
+        self.display("Subjects uploaded to Zooniverse.", self.display_printouts, self.UI)
 
     def delete_subjects(self, subject_set, subjects):
         """
@@ -520,11 +496,8 @@ class Spout:
             subjects = [subjects]
 
         subject_set.remove(subjects)
-        if(self.display_printouts):
-            if(self.UI is None):
-                print("Specified subjects were deleted.")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole("Specified subjects were deleted.")
+        self.display("Specified subjects were deleted.", self.display_printouts, self.UI)
+
 
     def modify_subject_metadata_field_name(self, subjects, current_field_name, new_field_name):
         """
@@ -552,17 +525,9 @@ class Spout:
                 subject.save()
 
             except KeyError:
-                if(self.display_printouts):
-                    if(self.UI is None):
-                        print(f"Specified subject {subject} was not modified. The current field name, {current_field_name}, does not exist.")
-                    elif (isinstance(self.UI, UserInterface.UserInterface)):
-                        self.UI.updateConsole(f"Specified subjects were not modified. The current field name, {current_field_name}, does not exist.")
+                self.display(f"Specified subject {subject} was not modified. The current field name, {current_field_name}, does not exist.", self.display_printouts, self.UI)
 
-        if (self.display_printouts):
-            if (self.UI is None):
-                print("Specified subjects were modified.")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole("Specified subjects were modified.")
+        self.display("Specified subjects were modified.",self.display_printouts, self.UI)
 
     def modify_subject_metadata_field_value(self, subjects, field_name, new_field_value):
         """
@@ -582,11 +547,7 @@ class Spout:
             try:
                 new_field_value = str(new_field_value)
             except:
-                if(self.display_printouts):
-                    if(self.UI is None):
-                        print("Specified subjects were not modified. The new field value could not be converted to a string.")
-                    elif (isinstance(self.UI, UserInterface.UserInterface)):
-                        self.UI.updateConsole("Specified subjects were not modified. The new field value could not be converted to a string.")
+                self.display("Specified subjects were not modified. The new field value could not be converted to a string.", self.display_printouts, self.UI)
 
         if (not isinstance(subjects, list)):
             subjects = [subjects]
@@ -597,17 +558,8 @@ class Spout:
                 subject.save()
 
             except KeyError:
-                if(self.display_printouts):
-                    if(self.UI is None):
-                        print(f"Specified subject {subject} was not modified. The current field name, {field_name}, does not exist.")
-                    elif (isinstance(self.UI, UserInterface.UserInterface)):
-                        self.UI.updateConsole(f"Specified subjects were not modified. The current field name, {field_name}, does not exist.")
-
-        if (self.display_printouts):
-            if (self.UI is None):
-                print("Specified subjects were modified.")
-            elif (isinstance(self.UI, UserInterface.UserInterface)):
-                self.UI.updateConsole("Specified subjects were modified.")
+                self.display(f"Specified subject {subject} was not modified. The current field name, {field_name}, does not exist.", self.display_printouts, self.UI)
+        self.display("Specified subjects were modified.", self.display_printouts, self.UI)
 
 
     def subject_has_images(self, subject):

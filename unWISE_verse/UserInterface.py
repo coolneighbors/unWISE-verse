@@ -13,10 +13,12 @@ from copy import copy
 from tkinter import filedialog as fd
 from tkinter.scrolledtext import ScrolledText
 from tkinter.colorchooser import askcolor
-import ZooniversePipeline
 import pickle
-import Data
 from datetime import datetime
+
+from unWISE_verse import ZooniversePipeline
+from unWISE_verse import Data
+
 
 '''
 full pipeline:
