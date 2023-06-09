@@ -1,7 +1,7 @@
-/unWISE-verse/__pycache__/
+/unWISE_verse/__pycache__/
 /venv/
 /.idea/
-/unWISE-verse/pngs/
+/unWISE_verse/pngs/
 *.csv
 *.pkl
 *.pickle
