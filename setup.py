@@ -4,7 +4,7 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='unWISE-verse',
+    name='unWISE_verse',
     url='https://github.com/coolneighbors/unWISE-verse.git',
     author='Aaron Meisner',
     author_email='aaron.meisner@noirlab.edu',
