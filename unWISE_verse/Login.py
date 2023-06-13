@@ -27,3 +27,35 @@ class Login:
         
         self.username = copy(username)
         self.password = copy(password)
+
+    def save(self, filename='login.pickle'):
+        """
+        Save the Login object as a pickle file.
+
+        Parameters
+        ----------
+            filename : str
+                A string representing the name of the file to save the Login object as
+                Defaults to 'login.pickle'
+        """
+
+        import pickle
+        with open(filename, 'wb') as file:
+            pickle.dump(self, file)
+
+    @staticmethod
+    def load(filename='login.pickle'):
+        """
+        Load a Login object from a pickle file.
+
+        Parameters
+        ----------
+            filename : str
+                A string representing the name of the file to load the Login object from
+                Defaults to 'login.pickle'
+        """
+
+        import pickle
+        with open(filename, 'rb') as file:
+            login = pickle.load(file)
+            return login
