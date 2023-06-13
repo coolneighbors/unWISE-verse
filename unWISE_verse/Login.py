@@ -5,6 +5,7 @@ Created on Friday, June 7th
 """
 
 from copy import copy
+import os
 
 class Login:
     def __init__(self, username='', password=''):
@@ -59,3 +60,17 @@ class Login:
         with open(filename, 'rb') as file:
             login = pickle.load(file)
             return login
+
+    @staticmethod
+    def loginExists(filename='login.pickle'):
+        """
+        Check if a Login object exists in a pickle file.
+
+        Parameters
+        ----------
+            filename : str
+                A string representing the name of the file to load the Login object from
+                Defaults to 'login.pickle'
+        """
+
+        return os.path.isfile(filename)
