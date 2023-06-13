@@ -8,7 +8,9 @@ Added further subject set manipulation on Tuesday, June 6th, 2023
 """
 
 import csv
+import getpass
 import os
+import sys
 import time
 from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
@@ -18,6 +20,8 @@ import unWISE_verse
 from unWISE_verse import Manifest
 
 from unWISE_verse import Dataset
+
+from unWISE_verse import Login
 
 from unWISE_verse.UserInterface import display
 
@@ -82,6 +86,31 @@ class Spout:
         display(f"Project ID: {self.linked_project.id}", self.display_printouts, self.UI)
         display(f"Project Slug: {self.linked_project.slug}", self.display_printouts, self.UI)
 
+    @staticmethod
+    def requestLogin(filename="login.pickle", save=True):
+        if (Login.Login.loginExists(filename)):
+            login = Login.Login.load(filename)
+            print("Login credentials loaded.")
+            return login
+        else:
+            print("Please enter your Zooniverse credentials.")
+            username = getpass.getpass(prompt='Username: ', stream=sys.stdin)
+            password = getpass.getpass(prompt='Password: ', stream=sys.stdin)
+
+            login = Login.Login(username=username, password=password)
+
+            if(save):
+                login.save(filename)
+                print("Login credentials saved.")
+
+            return login
+
+    @staticmethod
+    def requestZooniverseIDs():
+        print("Please enter the following Zooniverse IDs.")
+        project_id = int(getpass.getpass(prompt='Project ID: ', stream=sys.stdin))
+        subject_set_id = int(getpass.getpass(prompt='Subject Set ID: ', stream=sys.stdin))
+        return project_id, subject_set_id
 
     def display(self, text, display_printouts=False, UI=None):
         if (display_printouts):
