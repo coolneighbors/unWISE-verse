@@ -115,7 +115,7 @@ class Spout:
             with open("zooniverse_ids.pickle", 'rb') as zooniverseIDs_file:
                 project_id, subject_set_id = pickle.load(zooniverseIDs_file)
                 print("Zooniverse IDs loaded.")
-                return project_id, subject_set_id
+                return int(project_id), int(subject_set_id)
         else:
             print("Please enter the following Zooniverse IDs.")
             project_id = getpass.getpass(prompt='Project ID: ', stream=sys.stdin)
@@ -126,7 +126,7 @@ class Spout:
                     pickle.dump((project_id, subject_set_id), zooniverseIDs_file)
                 print("Login credentials saved.")
 
-            return project_id, subject_set_id
+            return int(project_id), int(subject_set_id)
 
     def display(self, text, display_printouts=False, UI=None):
         if (display_printouts):
