@@ -10,6 +10,7 @@ Added further subject set manipulation on Tuesday, June 6th, 2023
 import csv
 import getpass
 import os
+import pickle
 import sys
 import time
 from copy import copy
@@ -109,11 +110,23 @@ class Spout:
             return login
 
     @staticmethod
-    def requestZooniverseIDs():
-        print("Please enter the following Zooniverse IDs.")
-        project_id = int(getpass.getpass(prompt='Project ID: ', stream=sys.stdin))
-        subject_set_id = int(getpass.getpass(prompt='Subject Set ID: ', stream=sys.stdin))
-        return project_id, subject_set_id
+    def requestZooniverseIDs(filename="zooniverse_ids.pickle", save=True):
+        if (os.path.exists(filename)):
+            with open("zooniverse_ids.pickle", 'rb') as zooniverseIDs_file:
+                project_id, subject_set_id = pickle.load(zooniverseIDs_file)
+                print("Zooniverse IDs loaded.")
+                return project_id, subject_set_id
+        else:
+            print("Please enter the following Zooniverse IDs.")
+            project_id = getpass.getpass(prompt='Project ID: ', stream=sys.stdin)
+            subject_set_id = getpass.getpass(prompt='Subject Set ID: ', stream=sys.stdin)
+
+            if(save):
+                with open("zooniverse_ids.pickle", 'wb') as zooniverseIDs_file:
+                    pickle.dump((project_id, subject_set_id), zooniverseIDs_file)
+                print("Login credentials saved.")
+
+            return project_id, subject_set_id
 
     def display(self, text, display_printouts=False, UI=None):
         if (display_printouts):
