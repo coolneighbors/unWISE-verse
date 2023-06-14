@@ -14,6 +14,7 @@ import sys
 import time
 from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject
+from panoptes_client.set_member_subject import SetMemberSubject
 
 import unWISE_verse
 
@@ -25,6 +26,7 @@ from unWISE_verse import Login
 
 from unWISE_verse.UserInterface import display
 
+Panoptes_client = Panoptes()
 
 # Errors
 class ProjectIdentificationError(Exception):
@@ -70,7 +72,8 @@ class Spout:
 
         """
         self.UI = UI
-        Panoptes.connect(username=login.username, password=login.password)
+        global Panoptes_client
+        Panoptes_client = Panoptes.connect(username=login.username, password=login.password)
 
         if(isinstance(project_identifier,str)):
             project_slug = login.username + "/" + project_identifier.replace(" ", "-")
@@ -624,3 +627,33 @@ class Spout:
         """
 
         return subject.metadata != {}
+
+    @staticmethod
+    def get_subject(subject_id, subject_set_id=None):
+        """
+        Gets a subject from the subject set.
+        Parameters
+        ----------
+        subject_id : int
+            The id of the subject to be retrieved.
+        subject_set_id : int, optional
+            The id of the subject set to be retrieved from. If None, it will do a blanketed search for the subject.
+
+        Returns
+        -------
+        Subject object
+            A Subject object from the subject set.
+        """
+
+        global Panoptes_client
+        if(Panoptes_client.logged_in):
+            if (subject_set_id is None):
+                for sms in SetMemberSubject.where(subject_id=subject_id):
+                    return sms.links.subject
+                print(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
+            else:
+                for sms in SetMemberSubject.where(subject_set_id=subject_set_id, subject_id=subject_id):
+                    return sms.links.subject
+                print(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
+        else:
+            raise Exception("You must be logged to Zooniverse in to access subjects.")
