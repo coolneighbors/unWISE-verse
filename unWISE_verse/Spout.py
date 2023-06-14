@@ -124,7 +124,7 @@ class Spout:
             if(save):
                 with open("zooniverse_ids.pickle", 'wb') as zooniverseIDs_file:
                     pickle.dump((project_id, subject_set_id), zooniverseIDs_file)
-                print("Login credentials saved.")
+                print("Zooniverse IDs saved.")
 
             return int(project_id), int(subject_set_id)
 
