@@ -344,7 +344,7 @@ class CN_Dataset(Zooniverse_Dataset):
         MINBRIGHT = None
         MAXBRIGHT = None
 
-        if (row[f'{Data.Metadata.privatization_symbol}MINBRIGHT'] == "" or row[f'{Metadata.privatization_symbol}MAXBRIGHT'] == ""):
+        if (row[f'{Data.Metadata.privatization_symbol}MINBRIGHT'] == "" or row[f'{Data.Metadata.privatization_symbol}MAXBRIGHT'] == ""):
 
             unWISE_query = unWISEQuery.unWISEQuery(ra=RA, dec=DEC, size=SIZE, bands=12)
             brightness_clip = unWISE_query.calculateBrightnessClip(mode="percentile", percentile=97.5)
@@ -424,8 +424,7 @@ class CN_Dataset(Zooniverse_Dataset):
         row['Galactic Coordinates'] = galactic_coordinates.to_string("decimal")
 
         ecliptic_coordinates = ICRS_coordinates.transform_to(frame=astropy.coordinates.GeocentricMeanEcliptic)
-        row['Ecliptic Coordinates'] = ecliptic_coordinates.to_string("decimal")
-
+        row[f'{Data.Metadata.privatization_symbol}Ecliptic Coordinates'] = ecliptic_coordinates.to_string("decimal")
 
         # Assign the associated WISEVIEW url to the row
         row['WISEVIEW'] = f"[WiseView](+tab+{wise_view_query.generateWiseViewURL()})"
