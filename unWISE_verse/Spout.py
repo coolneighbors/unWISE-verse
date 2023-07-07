@@ -14,7 +14,7 @@ import pickle
 import sys
 import time
 from copy import copy
-from panoptes_client import Panoptes, Project, SubjectSet, Subject
+from panoptes_client import Panoptes, Project, SubjectSet, Subject, User
 from panoptes_client.set_member_subject import SetMemberSubject
 
 import unWISE_verse
@@ -41,6 +41,16 @@ class SubjectSetIdentificationError(Exception):
 class SubjectSetRetrievalError(Exception):
     def __init__(self, subject_set_id):
         super(SubjectSetRetrievalError, self).__init__(f"Subject Set Identifier is not associated with any known subject set in this project: {subject_set_id}")
+
+def check_login(func):
+    def wrapper(*args, **kwargs):
+        if not Panoptes_client.logged_in:
+            try:
+                raise Exception(f"You must be logged in to Zooniverse via unWISE-verse.Spout to use '{func.__name__}'.")
+            except AttributeError:
+                print(f"You must be logged in to Zooniverse via unWISE-verse.Spout to use the function '{func.__func__.__name__}'.")
+        return func(*args, **kwargs)
+    return wrapper
 
 class Spout:
 
@@ -138,6 +148,7 @@ class Spout:
                 except(RuntimeError):
                     print(text)
 
+    @check_login
     def create_subject_set(self, display_name):
         """
         Create a subject set in the linked Zooniverse project.
@@ -164,6 +175,7 @@ class Spout:
         subject_set.save()
         return subject_set
 
+    @check_login
     def subject_set_exists(self, subject_set_identifier):
         """
         Determine if a subject set, with a particular ID or display name, exists in the linked project.
@@ -205,6 +217,7 @@ class Spout:
         else:
             raise SubjectSetIdentificationError(subject_set_identifier)
 
+    @check_login
     def get_subject_set(self, subject_set_identifier):
         """
         Get a Subject Set object from the linked project using its ID or display name.
@@ -642,6 +655,7 @@ class Spout:
         return subject.metadata != {}
 
     @staticmethod
+    @check_login
     def get_subject(subject_id, subject_set_id=None):
         """
         Gets a subject from the subject set.
@@ -670,3 +684,36 @@ class Spout:
                 print(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
         else:
             raise Exception("You must be logged to Zooniverse in to access subjects.")
+
+    @staticmethod
+    @check_login
+    def get_user(user_identifier):
+        """
+        Gets a user from Zooniverse.
+
+        Parameters
+        ----------
+        user_identifier : str
+            The username or id of the user to be retrieved.
+
+        Returns
+        -------
+        User object
+            A User object from Zooniverse.
+        """
+
+        try:
+            user_identifier = int(user_identifier)
+        except ValueError:
+            pass
+
+        if (isinstance(user_identifier, str)):
+            for user in User.where(login=user_identifier):
+                return user
+            print(
+                f"Warning: User {user_identifier} does not exist or is inaccessible to the current user. Returning None.")
+        elif (isinstance(user_identifier, int)):
+            for user in User.where(id=user_identifier):
+                return user
+
+        print(f"Warning: User {user_identifier} does not exist or is inaccessible to the current user. Returning None.")
