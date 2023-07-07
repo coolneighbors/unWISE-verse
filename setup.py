@@ -10,7 +10,7 @@ setup(
     author_email='aaron.meisner@noirlab.edu',
     packages=['unWISE_verse'],
     install_requires=requirements,
-    version='1.1',
+    version='1.2',
     license='MIT',
     description='An integrated unWISE data collection and Zooniverse upload pipeline using the Panoptes-Client.',
     long_description=open('README.md').read(),
