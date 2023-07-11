@@ -54,7 +54,7 @@ class FieldNameIndexedIncorrectlyError(Exception):
         super(FieldNameIndexedIncorrectlyError, self).__init__(f"The field name, {field_name} (or another field at this index), is not correctly indexed compared to the other Data or Metadata.")
 
 class Data:
-    def __init__(self,field_names = [],data_values = []):
+    def __init__(self,field_names = [], data_values = []):
         """
         Initializes a Data object, an object which resembles a dictionary except that it is a pair of
         ordered lists rather than directly linked via keys. Additionally, it will only accept unique field names.
@@ -274,10 +274,14 @@ class Data:
         return f"Field Names: {self.field_names} , Values: {self.values}"
 
     @classmethod
-    def createFromDictionary(cls,data_dict):
+    def createFromDictionary(cls, data_dict):
         data_field_names = list(data_dict.keys())
         data_values = list(data_dict.values())
-        return Data(data_field_names,data_values)
+
+        if(len(data_field_names) != len(data_values)):
+            raise FieldAndValueMismatchError(data_field_names, data_values)
+
+        return cls(data_field_names, data_values)
 
     def toDictionary(self):
         """
@@ -421,6 +425,10 @@ class Metadata(Data):
         adjusted_field_names = copy(field_names)
         for i in range(len(field_names)):
             adjusted_field_name = adjusted_field_names[i]
+            if (len(adjusted_field_name) == 0):
+                adjusted_field_names[i] = "Empty Field Name"
+                continue
+
             if(adjusted_field_name[0] == Metadata.privatization_symbol):
                 adjusted_field_names[i] = adjusted_field_name[1:]
                 check_field_name = adjusted_field_name[1:]
@@ -428,7 +436,7 @@ class Metadata(Data):
                     raise InvalidFieldNameError(adjusted_field_name)
                 self.private_fields[i] = True
 
-        super(Metadata, self).__init__(adjusted_field_names,metadata_values)
+        super(Metadata, self).__init__(adjusted_field_names, metadata_values)
 
     def __getitem__(self, index):
         """
@@ -749,9 +757,3 @@ class Metadata(Data):
             else:
                 field_names_with_private_symbol.append(self.field_names[i])
         return field_names_with_private_symbol
-
-    @classmethod
-    def createFromDictionary(cls, data_dict):
-        data_field_names = list(data_dict.keys())
-        data_values = list(data_dict.values())
-        return Metadata(data_field_names, data_values)
