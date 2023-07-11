@@ -15,6 +15,7 @@ import sys
 import time
 from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject, User
+from panoptes_client.panoptes import PanoptesAPIException
 from panoptes_client.set_member_subject import SetMemberSubject
 
 import unWISE_verse
@@ -554,7 +555,7 @@ class Spout:
             subjects = [subjects]
 
         subject_set.remove(subjects)
-        display("Specified subjects were deleted.", self.display_printouts, self.UI)
+        display("Specified subjects were removed from the specified subject set.", self.display_printouts, self.UI)
 
     @staticmethod
     def delete_subjects(subjects):
@@ -698,19 +699,26 @@ class Spout:
         Subject object
             A Subject object from the subject set.
         """
+        try:
+            subject_id = int(subject_id)
+        except ValueError:
+            raise ValueError(f"Invalid subject id {subject_id}. Subject id must be an integer or a string that can be converted to an integer.")
 
-        global Panoptes_client
-        if(Panoptes_client.logged_in):
+        if(subject_set_id is not None):
+            try:
+                subject_set_id = int(subject_set_id)
+            except ValueError:
+                raise ValueError(f"Invalid subject set id {subject_set_id}. Subject set id must be an integer or a string that can be converted to an integer.")
+
+        try:
             if (subject_set_id is None):
-                for sms in SetMemberSubject.where(subject_id=subject_id):
+                for sms in Subject.where(id=subject_id):
                     return sms.links.subject
-                print(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
             else:
-                for sms in SetMemberSubject.where(subject_set_id=subject_set_id, subject_id=subject_id):
+                for sms in Subject.where(id=subject_id, subject_set_id=subject_set_id):
                     return sms.links.subject
-                print(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
-        else:
-            raise Exception("You must be logged to Zooniverse in to access subjects.")
+        except PanoptesAPIException:
+            print(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
 
     @staticmethod
     @check_login
