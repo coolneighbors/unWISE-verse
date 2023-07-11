@@ -537,9 +537,9 @@ class Spout:
         self.manifest = None
         display("Subjects uploaded to Zooniverse.", self.display_printouts, self.UI)
 
-    def delete_subjects(self, subject_set, subjects):
+    def remove_subjects(self, subject_set, subjects):
         """
-        Deletes the specified subjects from the given subject set.
+        Removes the specified subjects from the given subject set.
 
         Parameters
         ----------
@@ -547,7 +547,7 @@ class Spout:
                 A SubjectSet object associated to the linked project on Zooniverse.
 
             subjects : List of Subject objects
-                A list of Subject objects to be deleted from the subject set.
+                A list of Subject objects to be removed from the subject set.
         """
 
         if (not isinstance(subjects, list)):
@@ -556,6 +556,33 @@ class Spout:
         subject_set.remove(subjects)
         display("Specified subjects were deleted.", self.display_printouts, self.UI)
 
+    @staticmethod
+    def delete_subjects(subjects):
+        """
+        Deletes the specified subjects from the given subject set.
+
+        Parameters
+        ----------
+            subjects : List of Subject objects
+                A list of Subject objects to be deleted from Zooniverse.
+        """
+
+        if (not isinstance(subjects, list)):
+            subjects = [subjects]
+
+        print("This will remove all provided subjects from Zooniverse and cannot be undone. Are you sure you want to continue? (Yes or No)")
+        answer = input()
+
+        if(answer.lower() == "yes"):
+            for subject in subjects:
+                subject.delete()
+            print("Subjects deleted from Zooniverse.")
+        elif(answer.lower() == "no"):
+            print("Cancelling deletion.")
+            return None
+        else:
+            print("Invalid response. Cancelling deletion.")
+            return None
 
     def modify_subject_metadata_field_name(self, subjects, current_field_name, new_field_name):
         """
