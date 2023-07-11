@@ -713,10 +713,10 @@ class Spout:
         try:
             if (subject_set_id is None):
                 for sms in Subject.where(id=subject_id):
-                    return sms.links.subject
+                    return sms
             else:
                 for sms in Subject.where(id=subject_id, subject_set_id=subject_set_id):
-                    return sms.links.subject
+                    return sms
         except PanoptesAPIException:
             print(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
 
