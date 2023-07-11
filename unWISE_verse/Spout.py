@@ -122,7 +122,7 @@ class Spout:
     @staticmethod
     def requestZooniverseIDs(filename="zooniverse_ids.pickle", save=True):
         if (os.path.exists(filename)):
-            with open("zooniverse_ids.pickle", 'rb') as zooniverseIDs_file:
+            with open(filename, 'rb') as zooniverseIDs_file:
                 project_id, subject_set_id = pickle.load(zooniverseIDs_file)
                 print("Zooniverse IDs loaded.")
                 return int(project_id), int(subject_set_id)
@@ -132,7 +132,7 @@ class Spout:
             subject_set_id = getpass.getpass(prompt='Subject Set ID: ', stream=sys.stdin)
 
             if(save):
-                with open("zooniverse_ids.pickle", 'wb') as zooniverseIDs_file:
+                with open(filename, 'wb') as zooniverseIDs_file:
                     pickle.dump((project_id, subject_set_id), zooniverseIDs_file)
                 print("Zooniverse IDs saved.")
 
