@@ -121,23 +121,60 @@ class Spout:
             return login
 
     @staticmethod
-    def requestZooniverseIDs(filename="zooniverse_ids.pickle", save=True):
+    def requestProjectID(filename="project_id.pickle", save=True):
         if (os.path.exists(filename)):
-            with open(filename, 'rb') as zooniverseIDs_file:
-                project_id, subject_set_id = pickle.load(zooniverseIDs_file)
-                print("Zooniverse IDs loaded.")
-                return int(project_id), int(subject_set_id)
+            with open(filename, 'rb') as projectID_file:
+                project_id = pickle.load(projectID_file)
+                print(f"Project ID loaded: {project_id}")
+                return int(project_id)
         else:
-            print("Please enter the following Zooniverse IDs.")
+            print("Please enter a Zooniverse project ID.")
             project_id = getpass.getpass(prompt='Project ID: ', stream=sys.stdin)
+
+            if(save):
+                with open(filename, 'wb') as projectID_file:
+                    pickle.dump(project_id, projectID_file)
+                print(f"Project ID saved: {project_id}")
+
+            return int(project_id)
+
+    @staticmethod
+    def requestSubjectSetID(filename="subject_set_id.pickle", save=True):
+        if (os.path.exists(filename)):
+            with open(filename, 'rb') as subjectSetID_file:
+                subject_set_id = pickle.load(subjectSetID_file)
+                print(f"Subject Set ID loaded: {subject_set_id}")
+                return int(subject_set_id)
+        else:
+            print("Please enter a Zooniverse subject set ID.")
             subject_set_id = getpass.getpass(prompt='Subject Set ID: ', stream=sys.stdin)
 
             if(save):
-                with open(filename, 'wb') as zooniverseIDs_file:
-                    pickle.dump((project_id, subject_set_id), zooniverseIDs_file)
-                print("Zooniverse IDs saved.")
+                with open(filename, 'wb') as subjectSetID_file:
+                    pickle.dump(subject_set_id, subjectSetID_file)
+                print(f"Subject Set ID saved: {subject_set_id}")
 
-            return int(project_id), int(subject_set_id)
+            return int(subject_set_id)
+
+    @staticmethod
+    def requestZooniverseIDs(filenames=None, save=True):
+        if(filenames is not None):
+            if(not isinstance(filenames, list)):
+                raise TypeError("Filenames must be a list of strings.")
+            
+            if(len(filenames) == 0):
+                raise ValueError("No filenames provided.")
+            elif(len(filenames) != 2):
+                raise ValueError("Filenames must be a list of two strings: [project_id_filename, subject_set_id_filename]")
+        else:
+            filenames = ["project_id.pickle", "subject_set_id.pickle"]
+        
+        project_id_filename = filenames[0]
+        subject_set_id_filename = filenames[1]
+        project_id = Spout.requestProjectID(filename=project_id_filename, save=save)
+        subject_set_id = Spout.requestSubjectSetID(filename=subject_set_id_filename, save=save)
+        
+        return project_id, subject_set_id
 
     def display(self, text, display_printouts=False, UI=None):
         if (display_printouts):
@@ -681,6 +718,32 @@ class Spout:
         """
 
         return subject.metadata != {}
+
+    @staticmethod
+    @check_login
+    def get_subjects_from_project(project, subject_set_id=None, only_orphans=False):
+        subject_list = []
+
+        if (subject_set_id is not None and only_orphans):
+            raise Exception("You cannot specify a subject set ID and have only_orphans as True at the same time.")
+
+        if (isinstance(project, int) or isinstance(project, str)):
+            try:
+                project_id = int(project)
+            except ValueError:
+                raise Exception("The subject set ID must be an integer or a string that can be converted to an integer.")
+
+            # Get the subject set from the project.
+            project = Project.find(id=project_id)
+
+        for sms in Subject.where(project_id=project.id, subject_set_id=subject_set_id):
+            if (only_orphans):
+                if (len(sms.raw["links"]["subject_sets"]) == 0):
+                    subject_list.append(sms)
+            else:
+                subject_list.append(sms)
+
+        return subject_list
 
     @staticmethod
     @check_login
