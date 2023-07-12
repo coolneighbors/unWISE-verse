@@ -433,10 +433,12 @@ class CN_Dataset(Zooniverse_Dataset):
         # This is done to ensure the entire image frame is searched.
         radius = (math.sqrt(2) / 2) * FOV
 
+        VizieR_FOV = 15
+
         # Assign the associated SIMBAD, Legacy Surveys, VizieR, and IRSA urls to the row
         row['SIMBAD'] = f"[SIMBAD](+tab+{MetadataPointers.generate_SIMBAD_url(RA, DEC, radius)})"
         row['Legacy Surveys'] = f"[Legacy Surveys](+tab+{MetadataPointers.generate_legacy_survey_url(RA, DEC)})"
-        row['VizieR'] = f"[VizieR](+tab+{MetadataPointers.generate_VizieR_url(RA, DEC, FOV)})"
+        row['VizieR'] = f"[VizieR](+tab+{MetadataPointers.generate_VizieR_url(RA, DEC, VizieR_FOV)})"
         row['IRSA'] = f"[IRSA](+tab+{MetadataPointers.generate_IRSA_url(RA, DEC)})"
 
         row_metadata = list(row.values())
