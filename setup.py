@@ -1,7 +1,8 @@
 from setuptools import setup
 
-with open('requirements.txt') as f:
+with open('requirements.txt', encoding="utf-16") as f:
     requirements = f.read().splitlines()
+    print(requirements)
 
 setup(
     name='unWISE_verse',
