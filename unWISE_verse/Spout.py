@@ -722,6 +722,24 @@ class Spout:
     @staticmethod
     @check_login
     def get_subjects_from_project(project, subject_set_id=None, only_orphans=False):
+        """
+        Gets all subjects from the specified project.
+
+        Parameters
+        ----------
+        project : Project object
+            A Project object associated to the linked project on Zooniverse.
+        subject_set_id : int
+            The ID of the subject set to get subjects from. If None, all subjects from the project will be returned.
+        only_orphans : bool
+            If True, only subjects that are not in any subject set will be returned. If False, all subjects from the project will be returned.
+
+        Returns
+        -------
+        List of Subject objects
+            A list of Subject objects from the specified project.
+        """
+
         subject_list = []
 
         if (subject_set_id is not None and only_orphans):
