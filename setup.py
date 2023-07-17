@@ -7,6 +7,8 @@ with open('requirements.txt', encoding="utf-16") as f:
 # This fixes an import bug with the python-magic and python-magic-bin packages.
 # https://github.com/zooniverse/panoptes-python-client/issues/264
 def fix_python_magic_install_order():
+    subprocess.call(['pip', 'uninstall', f'python-magic'])
+
     python_magic = [line for line in requirements if 'python-magic' in line]
     if(len(python_magic) != 1):
         for p in python_magic:
