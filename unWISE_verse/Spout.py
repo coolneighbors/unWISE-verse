@@ -84,8 +84,8 @@ class Spout:
 
         """
         self.UI = UI
-        global Panoptes_client
-        Panoptes_client = Panoptes.connect(username=login.username, password=login.password)
+
+        self.loginToZooniverse(login)
 
         if(isinstance(project_identifier,str)):
             project_slug = login.username + "/" + project_identifier.replace(" ", "-")
@@ -100,6 +100,22 @@ class Spout:
 
         display(f"Project ID: {self.linked_project.id}", self.display_printouts, self.UI)
         display(f"Project Slug: {self.linked_project.slug}", self.display_printouts, self.UI)
+
+    @staticmethod
+    def loginToZooniverse(login):
+        """
+        Logs into Zooniverse using the login details of the user.
+
+        Parameters
+        ----------
+            login : Login object
+                A login object which holds the login details of the user trying to access Zooniverse.
+                Consists of a username and a password. Can be created using the Login.requestLogin() method.
+        """
+
+        global Panoptes_client
+        Panoptes_client = Panoptes.connect(username=login.username, password=login.password)
+
 
     @staticmethod
     def requestLogin(filename="login.pickle", save=True):
@@ -643,6 +659,7 @@ class Spout:
 
         for subject in subjects:
             try:
+                subject.reload()
                 subject.metadata[new_field_name] = subject.metadata[current_field_name]
                 del subject.metadata[current_field_name]
                 subject.save()
@@ -677,6 +694,7 @@ class Spout:
 
         for subject in subjects:
             try:
+                subject.reload()
                 subject.metadata[field_name] = new_field_value
                 subject.save()
 
@@ -739,7 +757,7 @@ class Spout:
         List of Subject objects
             A list of Subject objects from the specified project.
         """
-
+        
         subject_list = []
 
         if (subject_set_id is not None and only_orphans):
@@ -755,6 +773,7 @@ class Spout:
             project = Project.find(id=project_id)
 
         for sms in Subject.where(project_id=project.id, subject_set_id=subject_set_id):
+
             if (only_orphans):
                 if (len(sms.raw["links"]["subject_sets"]) == 0):
                     subject_list.append(sms)
