@@ -53,6 +53,49 @@ def check_login(func):
         return func(*args, **kwargs)
     return wrapper
 
+def cast_id_to_int(id):
+    try:
+        id = int(id)
+        return id
+    except ValueError:
+        raise ValueError(f"Invalid Zooniverse id {id}. Id must be an integer or a string that can be converted to an integer.")
+
+@check_login
+def id_to_project(project_id):
+    
+    if(isinstance(project_id, Project)):
+        return project_id
+    
+    project_id = cast_id_to_int(project_id)
+    try:
+        return Project.find(project_id)
+    except PanoptesAPIException:
+        raise PanoptesAPIException(f"Project with id {project_id} does not exist or you do not have access to it.")
+
+@check_login
+def id_to_subject_set(project_id, subject_set_id):
+    
+    if(isinstance(subject_set_id, SubjectSet)):
+        return subject_set_id
+    
+    project = id_to_project(project_id)
+    subject_set_id = cast_id_to_int(subject_set_id)
+
+    for subject_set in project.links.subject_sets:
+        if int(subject_set.id) == subject_set_id:
+            return subject_set
+
+    raise SubjectSetRetrievalError(subject_set_id)
+
+@check_login
+def id_to_subject(subject_id):
+    
+    if(isinstance(subject_id, Subject)):
+        return subject_id
+    
+    subject_id = cast_id_to_int(subject_id)
+    return Subject.find(subject_id)
+
 class Spout:
 
     def __init__(self, project_identifier, login, display_printouts=False, UI=None):
@@ -590,39 +633,55 @@ class Spout:
         self.fill_subject_set(subject_set, subjects)
         self.manifest = None
         display("Subjects uploaded to Zooniverse.", self.display_printouts, self.UI)
+    
+    # Static methods used for post-upload modifications to subjects, removal of subjects, deletion of subjects, etc.
 
-    def remove_subjects(self, subject_set, subjects):
+    @staticmethod
+    @check_login
+    def remove_subjects(project_id, subject_set_id, subjects):
         """
         Removes the specified subjects from the given subject set.
 
         Parameters
         ----------
-            subject_set : SubjectSet object
+            project_id : Project object, int, or str
+                A Project object associated to the linked project on Zooniverse or a project ID.
+            subject_set_id : SubjectSet object, int, or str
                 A SubjectSet object associated to the linked project on Zooniverse.
-
-            subjects : List of Subject objects
-                A list of Subject objects to be removed from the subject set.
+            subjects : List of Subject objects, or List of int or str
+                A list of Subject objects to be removed from the subject set or a list of subject IDs to be removed from the subject set.
         """
-
+        
+        subject_set = id_to_subject_set(project_id, subject_set_id) 
+        
         if (not isinstance(subjects, list)):
             subjects = [subjects]
-
+        
+        for index, subject in enumerate(subjects):
+            if(isinstance(subject, int) or isinstance(subject, str)):
+                subjects[index] = id_to_subject(subject)
+        
         subject_set.remove(subjects)
-        display("Specified subjects were removed from the specified subject set.", self.display_printouts, self.UI)
+        display("Specified subjects were removed from the specified subject set.")
 
     @staticmethod
+    @check_login
     def delete_subjects(subjects):
         """
         Deletes the specified subjects from the given subject set.
 
         Parameters
         ----------
-            subjects : List of Subject objects
-                A list of Subject objects to be deleted from Zooniverse.
+            subjects : List of Subject objects or List of int or str
+                A list of Subject objects to be deleted from Zooniverse or a list of subject IDs to be deleted from Zooniverse.
         """
 
         if (not isinstance(subjects, list)):
             subjects = [subjects]
+            
+        for index, subject in enumerate(subjects):
+            if(isinstance(subject, int) or isinstance(subject, str)):
+                subjects[index] = id_to_subject(subject)
 
         print("This will remove all provided subjects from Zooniverse and cannot be undone. Are you sure you want to continue? (Yes or No)")
         answer = input()
@@ -638,16 +697,16 @@ class Spout:
             print("Invalid response. Cancelling deletion.")
             return None
 
-    def modify_subject_metadata_field_name(self, subjects, current_field_name, new_field_name):
+    @staticmethod
+    @check_login
+    def modify_subject_metadata_field_name(subjects, current_field_name, new_field_name):
         """
         Modifies the metadata field of the subjects in the subject set.
 
         Parameters
         ----------
-        subject_set : SubjectSet object
-            A SubjectSet object associated to the linked project on Zooniverse.
-        subjects : List of Subject objects
-            A list of Subject objects to be modified.
+        subjects : List of Subject objects or List of int or str
+            A list of Subject objects to be modified or a list of subject IDs to be modified.
         current_field_name : str
             The name of the metadata field to be modified.
         new_field_name : str
@@ -656,6 +715,10 @@ class Spout:
 
         if(not isinstance(subjects, list)):
             subjects = [subjects]
+            
+        for index, subject in enumerate(subjects):
+            if(isinstance(subject, int) or isinstance(subject, str)):
+                subjects[index] = id_to_subject(subject)
 
         for subject in subjects:
             try:
@@ -665,18 +728,20 @@ class Spout:
                 subject.save()
 
             except KeyError:
-                display(f"Specified subject {subject} was not modified. The current field name, {current_field_name}, does not exist.", self.display_printouts, self.UI)
+                display(f"Specified subject {subject} was not modified. The current field name, {current_field_name}, does not exist.")
 
-        display("Specified subjects were modified.",self.display_printouts, self.UI)
+        display("Specified subjects were modified.")
 
-    def modify_subject_metadata_field_value(self, subjects, field_name, new_field_value):
+    @staticmethod
+    @check_login
+    def modify_subject_metadata_field_value(subjects, field_name, new_field_value):
         """
         Modifies the metadata field value of the subjects in the subject set.
 
         Parameters
         ----------
-        subjects : List of Subject objects
-            A list of Subject objects to be modified.
+        subjects : List of Subject objects or List of int or str
+            A list of Subject objects to be modified or a list of subject IDs to be modified.
         field_name : str
             The name of the metadata field to be modified.
         new_field_value : str
@@ -687,10 +752,14 @@ class Spout:
             try:
                 new_field_value = str(new_field_value)
             except:
-                display("Specified subjects were not modified. The new field value could not be converted to a string.", self.display_printouts, self.UI)
-
+                display("Specified subjects were not modified. The new field value could not be converted to a string.")
+        
         if (not isinstance(subjects, list)):
             subjects = [subjects]
+
+        for index, subject in enumerate(subjects):
+            if (isinstance(subject, int) or isinstance(subject, str)):
+                subjects[index] = id_to_subject(subject)
 
         for subject in subjects:
             try:
@@ -699,35 +768,40 @@ class Spout:
                 subject.save()
 
             except KeyError:
-                display(f"Specified subject {subject} was not modified. The current field name, {field_name}, does not exist.", self.display_printouts, self.UI)
-        display("Specified subjects were modified.", self.display_printouts, self.UI)
+                display(f"Specified subject {subject} was not modified. The current field name, {field_name}, does not exist.")
+        display("Specified subjects were modified.")
 
-
-    def subject_has_images(self, subject):
+    @staticmethod
+    @check_login
+    def subject_has_images(subject):
         """
         Checks if the subject has images.
 
         Parameters
         ----------
-        subject : Subject object
-            A Subject object to be checked.
+        subject : Subject object or int or str
+            A Subject object to be checked or a subject ID to be checked.
 
         Returns
         -------
         bool
             True if the subject has images, False otherwise.
         """
+        
+        subject = id_to_subject(subject)
 
         return len(subject.raw['locations']) != 0
 
-    def subject_has_metadata(self, subject):
+    @staticmethod
+    @check_login
+    def subject_has_metadata(subject):
         """
         Checks if the subject has metadata.
 
         Parameters
         ----------
-        subject : Subject object
-            A Subject object to be checked.
+        subject : Subject object or int or str
+            A Subject object to be checked or a subject ID to be checked.
 
         Returns
         -------
@@ -735,20 +809,22 @@ class Spout:
             True if the subject has metadata, False otherwise.
         """
 
+        subject = id_to_subject(subject)
+        
         return subject.metadata != {}
 
     @staticmethod
     @check_login
-    def get_subjects_from_project(project, subject_set_id=None, only_orphans=False):
+    def get_subjects_from_project(project, subject_set=None, only_orphans=False):
         """
         Gets all subjects from the specified project.
 
         Parameters
         ----------
-        project : Project object
-            A Project object associated to the linked project on Zooniverse.
-        subject_set_id : int
-            The ID of the subject set to get subjects from. If None, all subjects from the project will be returned.
+        project : Project object, int, or str
+            A Project object associated to the linked project on Zooniverse. Can also be the ID of the project as an int or str.
+        subject_set : SubjectSet object, int, or str
+            A SubjectSet object associated to the linked project on Zooniverse. Can also be the ID of the subject set as an int or str.
         only_orphans : bool
             If True, only subjects that are not in any subject set will be returned. If False, all subjects from the project will be returned.
 
@@ -757,22 +833,20 @@ class Spout:
         List of Subject objects
             A list of Subject objects from the specified project.
         """
-        
+
         subject_list = []
 
-        if (subject_set_id is not None and only_orphans):
+        if (subject_set is not None and only_orphans):
             raise Exception("You cannot specify a subject set ID and have only_orphans as True at the same time.")
 
-        if (isinstance(project, int) or isinstance(project, str)):
-            try:
-                project_id = int(project)
-            except ValueError:
-                raise Exception("The subject set ID must be an integer or a string that can be converted to an integer.")
+        project_id = id_to_project(project).id
 
-            # Get the subject set from the project.
-            project = Project.find(id=project_id)
+        if(subject_set is not None):
+            subject_set_id = id_to_subject_set(project, subject_set).id
+        else:
+            subject_set_id = None
 
-        for sms in Subject.where(project_id=project.id, subject_set_id=subject_set_id):
+        for sms in Subject.where(project_id=project_id, subject_set_id=subject_set_id):
 
             if (only_orphans):
                 if (len(sms.raw["links"]["subject_sets"]) == 0):
@@ -799,6 +873,7 @@ class Spout:
         Subject object
             A Subject object from the subject set.
         """
+        
         try:
             subject_id = int(subject_id)
         except ValueError:
@@ -818,7 +893,7 @@ class Spout:
                 for sms in Subject.where(id=subject_id, subject_set_id=subject_set_id):
                     return sms
         except PanoptesAPIException:
-            print(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
+            display(f"Warning: Subject {subject_id} does not exist or is inaccessible to the current user. Returning None.")
 
     @staticmethod
     @check_login
@@ -845,10 +920,9 @@ class Spout:
         if (isinstance(user_identifier, str)):
             for user in User.where(login=user_identifier):
                 return user
-            print(
-                f"Warning: User {user_identifier} does not exist or is inaccessible to the current user. Returning None.")
+            display(f"Warning: User {user_identifier} does not exist or is inaccessible to the current user. Returning None.")
         elif (isinstance(user_identifier, int)):
             for user in User.where(id=user_identifier):
                 return user
 
-        print(f"Warning: User {user_identifier} does not exist or is inaccessible to the current user. Returning None.")
+        display(f"Warning: User {user_identifier} does not exist or is inaccessible to the current user. Returning None.")
