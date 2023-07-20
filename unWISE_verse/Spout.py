@@ -13,6 +13,7 @@ import os
 import pickle
 import sys
 import time
+from tqdm import tqdm
 from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject, User
 from panoptes_client.panoptes import PanoptesAPIException
@@ -839,20 +840,35 @@ class Spout:
         if (subject_set is not None and only_orphans):
             raise Exception("You cannot specify a subject set ID and have only_orphans as True at the same time.")
 
-        project_id = id_to_project(project).id
+        project = id_to_project(project)
+        project.reload()
+        project_id = project.id
+
+        # Get the total number of subjects in the project
+        total_subjects = Subject.where(project_id=project_id).meta["count"]
 
         if(subject_set is not None):
-            subject_set_id = id_to_subject_set(project, subject_set).id
+            subject_set = id_to_subject_set(project, subject_set)
+            subject_set_id = subject_set.id
+            total_subjects = Subject.where(project_id=project_id, subject_set_id=subject_set_id).meta["count"]
         else:
             subject_set_id = None
 
-        for sms in Subject.where(project_id=project_id, subject_set_id=subject_set_id):
+        if(not only_orphans):
+            print(f"Getting {total_subjects} subjects from project {project_id}...")
+        else:
+            print(f"Getting orphan subjects from project {project_id}...")
 
-            if (only_orphans):
-                if (len(sms.raw["links"]["subject_sets"]) == 0):
+        # Create a progress bar
+        with tqdm(total=total_subjects, unit=" Subjects") as pbar:
+            for sms in Subject.where(project_id=project_id, subject_set_id=subject_set_id):
+
+                if (only_orphans):
+                    if (len(sms.raw["links"]["subject_sets"]) == 0):
+                        subject_list.append(sms)
+                else:
                     subject_list.append(sms)
-            else:
-                subject_list.append(sms)
+                pbar.update(1)
 
         return subject_list
 
