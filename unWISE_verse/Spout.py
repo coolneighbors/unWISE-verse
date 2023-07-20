@@ -638,21 +638,21 @@ class Spout:
 
     @staticmethod
     @check_login
-    def remove_subjects(project_id, subject_set_id, subjects):
+    def remove_subjects(project, subject_set, subjects):
         """
         Removes the specified subjects from the given subject set.
 
         Parameters
         ----------
-            project_id : Project object, int, or str
+            project : Project object, int, or str
                 A Project object associated to the linked project on Zooniverse or a project ID.
-            subject_set_id : SubjectSet object, int, or str
+            subject_set : SubjectSet object, int, or str
                 A SubjectSet object associated to the linked project on Zooniverse.
             subjects : List of Subject objects, or List of int or str
                 A list of Subject objects to be removed from the subject set or a list of subject IDs to be removed from the subject set.
         """
         
-        subject_set = id_to_subject_set(project_id, subject_set_id) 
+        subject_set = id_to_subject_set(project, subject_set)
         
         if (not isinstance(subjects, list)):
             subjects = [subjects]
