@@ -390,7 +390,6 @@ class CN_Dataset(Zooniverse_Dataset):
         # Assign the metadata values to the row
         row[f'{Data.Metadata.privatization_symbol}MINBRIGHT'] = wise_view_query.wise_view_parameters["minbright"]
         row[f'{Data.Metadata.privatization_symbol}MAXBRIGHT'] = wise_view_query.wise_view_parameters["maxbright"]
-        row['FOV'] = f"~{FOV} x ~{FOV} arcseconds"
         row['Data Source'] = f"[unWISE](+tab+http://unwise.me/)"
         row['unWISE Pixel Scale'] = f"~{WiseViewQuery.unWISE_pixel_scale} arcseconds per pixel"
 
@@ -441,22 +440,24 @@ class CN_Dataset(Zooniverse_Dataset):
         row['VizieR'] = f"[VizieR](+tab+{MetadataPointers.generate_VizieR_url(RA, DEC, VizieR_FOV)})"
         row['IRSA'] = f"[IRSA](+tab+{MetadataPointers.generate_IRSA_url(RA, DEC)})"
 
-        row_metadata = list(row.values())
-        metadata_field_names = list(row.keys())
-
         # Save all images for parameter set, add grid if toggled for that image
         flist, size_list = wise_view_query.downloadWiseViewData(os.path.join(PNG_DIRECTORY, sub_directory_path),
                                                                 scale_factor=SCALE, addGrid=ADDGRID,
                                                                 gridCount=GRIDCOUNT, gridType=GRIDTYPE,
                                                                 gridColor=GRIDCOLOR)
         png_count += len(flist)
-
         is_partial_cutout = False
         for size in size_list:
             width, height = size
+            row["unWISE Pixel Width"] = int(width/SCALE)
+            row["unWISE Pixel Height"] = int(height/SCALE)
+            row['FOV'] = f"{round(wise_view_query.PixelSizeToFOV(int(width/SCALE)),2)} x {round(wise_view_query.PixelSizeToFOV(int(height/SCALE)),2)} arcseconds"
             if (width != height):
                 is_partial_cutout = True
                 break
+
+        row_metadata = list(row.values())
+        metadata_field_names = list(row.keys())
 
         data_field_names = []
         for i in range(len(flist)):
