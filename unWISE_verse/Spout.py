@@ -169,8 +169,8 @@ class Spout:
             return login
         else:
             print("Please enter your Zooniverse credentials.")
-            username = getpass.getpass(prompt='Username: ', stream=sys.stdin)
-            password = getpass.getpass(prompt='Password: ', stream=sys.stdin)
+            username = getpass.getpass(prompt='Username: ')
+            password = getpass.getpass(prompt='Password: ')
 
             login = Login.Login(username=username, password=password)
 
@@ -189,7 +189,7 @@ class Spout:
                 return int(project_id)
         else:
             print("Please enter a Zooniverse project ID.")
-            project_id = getpass.getpass(prompt='Project ID: ', stream=sys.stdin)
+            project_id = getpass.getpass(prompt='Project ID: ')
 
             if(save):
                 with open(filename, 'wb') as projectID_file:
@@ -207,7 +207,7 @@ class Spout:
                 return int(subject_set_id)
         else:
             print("Please enter a Zooniverse subject set ID.")
-            subject_set_id = getpass.getpass(prompt='Subject Set ID: ', stream=sys.stdin)
+            subject_set_id = getpass.getpass(prompt='Subject Set ID: ')
 
             if(save):
                 with open(filename, 'wb') as subjectSetID_file:
