@@ -11,6 +11,7 @@ import csv
 import getpass
 import os
 import pickle
+import subprocess
 import sys
 import time
 from tqdm import tqdm
@@ -18,6 +19,11 @@ from copy import copy
 from panoptes_client import Panoptes, Project, SubjectSet, Subject, User
 from panoptes_client.panoptes import PanoptesAPIException
 from panoptes_client.set_member_subject import SetMemberSubject
+
+# This fixes an import bug with the python-magic and python-magic-bin packages.
+# https://github.com/zooniverse/panoptes-python-client/issues/264
+subprocess.call(['pip', 'uninstall', 'python-magic-bin'])
+subprocess.call(['pip', 'install', 'python-magic-bin'])
 
 import unWISE_verse
 
