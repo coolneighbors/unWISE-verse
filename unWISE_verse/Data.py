@@ -474,8 +474,9 @@ class Metadata(Data):
         if(field_name in self.field_names):
             index = self.field_names.index(field_name)
             return self.values[index]
-        elif(Metadata.privatization_symbol + field_name in self.field_names):
-            index = self.field_names.index(Metadata.privatization_symbol + field_name)
+        elif(field_name in self.getAdjustedFieldNames()):
+            field_name = field_name.removeprefix(Metadata.privatization_symbol)
+            index = self.field_names.index(field_name)
             return self.values[index]
         else:
             raise NonExistentFieldError(field_name)
@@ -757,3 +758,24 @@ class Metadata(Data):
             else:
                 field_names_with_private_symbol.append(self.field_names[i])
         return field_names_with_private_symbol
+
+    def hasField(self, field_name):
+        """
+        Checks if the Metadata object has a field name.
+
+        Parameters
+        ----------
+            field_name : str
+                A string representing the field name being checked.
+
+        Returns
+        -------
+        has_field : bool
+            A boolean representing whether or not the Metadata object has the field name.
+
+        Notes
+        -----
+
+        """
+
+        return (field_name in self.field_names) or (field_name in self.getAdjustedFieldNames())
