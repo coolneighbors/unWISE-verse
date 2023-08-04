@@ -562,7 +562,7 @@ class Spout:
         for i in range(0, len(subjects), chunk_size):
             chunk_subjects = subjects[i:i + chunk_size]
             subject_set.add(chunk_subjects)
-            display("Added subjects " + str(i+1) + " through " + str(len(chunk_subjects)) + " to the subject set.", self.display_printouts, self.UI)
+            display("Added subjects " + str(i+1) + " through " + str(i+len(chunk_subjects)) + " to the subject set.", self.display_printouts, self.UI)
             subject_set.save()
 
         display("Subject set filled.", self.display_printouts, self.UI)
