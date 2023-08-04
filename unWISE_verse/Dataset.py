@@ -539,7 +539,6 @@ class CN_Dataset(Zooniverse_Dataset):
         return png_count, sub_directory
 
     def generateDataAndMetadataLists(self, dataset_filename, ignore_partial_cutouts = False, display_printouts=False, UI=None):
-
         # Initialize the data and metadata lists
         data_list = []
         metadata_list = []
@@ -660,7 +659,6 @@ class CN_Dataset(Zooniverse_Dataset):
                     # Display that the image downloads are beginning for the chunk
                     display(f"Beginning image downloads for chunk {chunk_index}.", display_printouts, UI)
 
-
                 # Iterate through the rows in the chunk
                 for chunk_row_index, row in enumerate(chunk_rows):
                     try:
@@ -672,9 +670,8 @@ class CN_Dataset(Zooniverse_Dataset):
                     # Get the row index of the current row being processed
                     row_index = chunk_index * chunk_size + chunk_row_index
 
-                    # Check if a save state exists for the dataset and if it does, load it.
+                    # Iterate to the next row which has not been processed
                     if (self.stateExists(dataset_filename)):
-                        data_list, metadata_list, png_count, sub_directory, time_per_row, wise_view_queries_time, wise_view_queries = self.loadState(dataset_filename)
                         loaded_row_index = len(data_list) - 1
                         if(row_index <= loaded_row_index):
                             continue
