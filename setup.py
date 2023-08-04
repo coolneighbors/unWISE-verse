@@ -11,7 +11,7 @@ setup(
     author_email='aaron.meisner@noirlab.edu',
     packages=['unWISE_verse'],
     install_requires=requirements,
-    package_data={'unWISE_verse': ['themes/awthemes-10.4.0//*']},
+    package_data={'unWISE_verse': ['themes/awthemes-10.4.0/*']},
     version='1.2',
     license='MIT',
     description='An integrated unWISE data collection and Zooniverse upload pipeline using the Panoptes-Client.',
