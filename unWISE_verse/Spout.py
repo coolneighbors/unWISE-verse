@@ -560,6 +560,7 @@ class Spout:
         chunk_size = 1000
         # for the number of subjects in the subject set, add the subjects to the subject set in chunks of chunk_size
         for i in range(0, len(subjects), chunk_size):
+            subject_set.reload()
             chunk_subjects = subjects[i:i + chunk_size]
             subject_set.add(chunk_subjects)
             display("Added subjects " + str(i+1) + " through " + str(i+len(chunk_subjects)) + " to the subject set.", self.display_printouts, self.UI)
