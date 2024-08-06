@@ -1,7 +1,4 @@
 import logging
-import multiprocessing
-import os
-from datetime import datetime
 from unWISE_verse import UserInterface
 from unWISE_verse.Logger import Logger
 
