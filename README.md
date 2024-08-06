@@ -23,7 +23,7 @@ git clone http://github.com/coolneighbors/unWISE-verse
 
 * Install the necessary requirements:
 ```
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 Alternatively, you can directly install both using:
