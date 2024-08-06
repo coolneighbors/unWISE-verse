@@ -2,8 +2,15 @@
 /venv/
 /.idea/
 /unWISE_verse/pngs/
+/unWISE_verse/logs/
 *.csv
+*.yaml
 *.pkl
 *.pickle
+*.save_state
 *.lnk
 .DS_Store
+*.json
+*.gif
+!Ajax_loader_metal_512_modified.gif
+*.png
